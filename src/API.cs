@@ -223,7 +223,7 @@ public class ClientprefsApi : IClientprefsApi
 
         var steamId = player.SteamID.ToString();
 
-        return !_plugin.PlayerSettings.TryGetValue(steamId, out var pref) || !pref.Loaded;
+        return _plugin.PlayerSettings.TryGetValue(steamId, out var pref) && pref.Loaded;
     }
 
     public void SetCookiePrefabMenu(int cookieId, CookieMenu type, string display, Action<CCSPlayerController, CookieMenuAction, string> cookieMenuHandler)

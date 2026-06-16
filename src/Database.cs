@@ -298,7 +298,7 @@ public partial class Clientprefs
 		}
 		else
 		{
-			foreach (var pair in PlayerSettings)
+			foreach (var pair in PlayerSettings.ToList())
 			{
 				var steamId = pair.Key;
 				var value = pair.Value;

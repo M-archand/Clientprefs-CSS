@@ -162,14 +162,7 @@ public class ClientprefsApi : IClientprefsApi
             throw new Exception($"GetPlayerCookie failed due to player not being loaded yet. Use OnPlayerCookiesCached");
         }
 
-        var steamId = player.SteamID.ToString();
-
-        if (!_plugin.PlayerSettings.TryGetValue(steamId, out var _))
-        {
-            throw new Exception($"GetPlayerCookie failed due to it being called before cookies were loaded for player {steamId}");
-        }
-
-        if (_plugin.PlayerSettings[steamId].TryGetCookie(cookieId, out var cookie))
+        if (pref.TryGetCookie(cookieId, out var cookie))
         {
             return cookie.NewValue;
         }

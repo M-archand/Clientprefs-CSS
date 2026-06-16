@@ -178,7 +178,7 @@ public partial class Clientprefs
 				{
 					await connection.OpenAsync();
 
-					string query = $"SELECT * FROM {Config.TableNamePlayerData} WHERE steamid = @steam";
+					string query = $"SELECT cookie_id, value FROM {Config.TableNamePlayerData} WHERE steamid = @steam";
 
 					var rows = await connection.QueryAsync(query, new { steam = steamId });
 

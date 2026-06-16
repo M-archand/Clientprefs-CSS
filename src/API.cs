@@ -8,13 +8,15 @@ public partial class Clientprefs
 {
     public void AddClientprefCommands(string name, string description, CookieAccess access)
     {
-        Cookies.Add(new Cookie()
+        var cookie = new Cookie()
         {
             Id = LatestClientprefID,
             Name = name,
             Description = description,
             Access = access
-        });
+        };
+        Cookies[cookie.Id] = cookie;
+        _cookiesByName[cookie.Name] = cookie;
     }
 
     public int FindPlayerCookie(string name)
@@ -28,7 +30,7 @@ public partial class Clientprefs
 
     public CookieAccess GetCookieAccess(int cookieId)
     {
-        return Cookies.Find(p => p.Id == cookieId)!.Access;
+        return Cookies[cookieId].Access;
     }
 
     public void AddPlayerClientPrefNewValue(string steamId, int cookieId, string value)
@@ -43,17 +45,17 @@ public partial class Clientprefs
 
     public int ClientPrefCount()
     {
-        return Cookies.Count();
+        return Cookies.Count;
     }
 
     public bool ClientPrefExists(string name)
     {
-        return Cookies.Any(p => p.Name == name || p.Id == LatestClientprefID);
+        return _cookiesByName.ContainsKey(name) || Cookies.ContainsKey(LatestClientprefID);
     }
 
     public int GetClientPrefByName(string name)
     {
-        return Cookies.First(p => p.Name == name).Id;
+        return _cookiesByName[name].Id;
     }
 
     public void LogWarning(string message)

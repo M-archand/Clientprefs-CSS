@@ -86,9 +86,10 @@ public partial class Clientprefs
     public ClientprefsConfig Config { get; set; } = new();
     public PluginCapability<IClientprefsApi> PluginCapability = new("Clientprefs");
     public required ClientprefsApi ClientprefsApi { get; set; }
-    public List<Cookie> Cookies = new();
+    public Dictionary<int, Cookie> Cookies = new();
     public Dictionary<string, PlayerSetting> PlayerSettings = new();
     public int LatestClientprefID = 0;
 
+    private Dictionary<string, Cookie> _cookiesByName = new();
     private bool _databaseLoaded = false, _isMySQL = false;
 }

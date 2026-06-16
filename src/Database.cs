@@ -43,6 +43,7 @@ public partial class Clientprefs
 		try
 		{
 			Cookies.Clear();
+			_cookiesByName.Clear();
 			LatestClientprefID = 0;
 
 			string cookiequery = @$"CREATE TABLE IF NOT EXISTS {Config.TableName}
@@ -105,22 +106,22 @@ public partial class Clientprefs
 
 					foreach (var row in rows)
 					{
-						if (Cookies.Any(p => p.Id == (int)row.id || p.Name == row.name)) continue;
+						if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;
 
 						if ((int)row.id > LatestClientprefID)
 						{
 							LatestClientprefID = (int)row.id;
 						}
 
-						Cookies.Add(
-							new Cookie
-							{
-								Id = (int)row.id,
-								Name = row.name,
-								Description = row.description,
-								Access = (CookieAccess)row.access,
-							}
-						);
+						var cookie = new Cookie
+						{
+							Id = (int)row.id,
+							Name = row.name,
+							Description = row.description,
+							Access = (CookieAccess)row.access,
+						};
+						Cookies[cookie.Id] = cookie;
+						_cookiesByName[cookie.Name] = cookie;
 					}
 
 					_databaseLoaded = true;
@@ -340,8 +341,7 @@ public partial class Clientprefs
 
 								if (pref.OldValue == pref.NewValue && !isNewValueNull) continue;
 
-								var p = Cookies.FirstOrDefault(p => p.Id == pref.Id);
-								if (p == null) continue;
+								if (!Cookies.ContainsKey(pref.Id)) continue;
 
 								if (isNewValueNull)
 								{

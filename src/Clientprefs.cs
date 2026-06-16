@@ -28,6 +28,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         base.Load(hotReload);
 
         Cookies = new();
+        _cookiesByName = new();
         PlayerSettings = new();
 
         ClientprefsApi = new ClientprefsApi(this);
@@ -60,7 +61,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
             command.ReplyToCommand(Localizer["Prefix"] + Localizer["Printing Cookie List"]);
 
             int count = 1;
-            foreach (var pref in Cookies)
+            foreach (var pref in Cookies.Values)
             {
                 command.ReplyToCommand($"{Localizer["Prefix"]} [{count}] {pref.Name} {pref.Description}");
                 count++;
@@ -101,7 +102,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         }
 
         string value = cookie.NewValue;
-        string description = Cookies.First(p => p.Id == cookieId).Description;
+        string description = Cookies[cookieId].Description;
 
         command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie Value", name, description, value]);
 

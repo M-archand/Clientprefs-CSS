@@ -157,11 +157,22 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         }
 
         var steamId = player.SteamID.ToString();
+        SaveDisconnectedPlayerCookies(steamId, 50);
+        return HookResult.Continue;
+    }
+
+    private void SaveDisconnectedPlayerCookies(string steamId, int attemptsLeft)
+    {
         AddTimer(0.1f, () =>
         {
-            SavePlayerCookies(steamId); // So that devs can save prefs at player disconnect safely
+            if (attemptsLeft > 0 && PlayerSettings.TryGetValue(steamId, out var pref) && !pref.Loaded)
+            {
+                SaveDisconnectedPlayerCookies(steamId, attemptsLeft - 1);
+                return;
+            }
+
+            SavePlayerCookies(steamId);
         });
-        return HookResult.Continue;
     }
 
     private HookResult OnMapEnd(CCSPlayerController? player, CommandInfo commandInfo)

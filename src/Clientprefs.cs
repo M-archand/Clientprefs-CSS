@@ -35,7 +35,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
         _databaseLoaded = false;
 
-        Task.Run(ConnectDatabaseTable).Wait();
+        _ = Task.Run(ConnectDatabaseTable);
 
         AddCommandListener("changelevel", OnMapEnd, HookMode.Pre);
         AddCommandListener("map", OnMapEnd, HookMode.Pre);

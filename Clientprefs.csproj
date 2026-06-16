@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <OutputPath>$(MSBuildThisFileDirectory)\BuildOutput\plugins\Clientprefs\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="ClientprefsApi/**/*.cs" />
+  </ItemGroup>
+
+ <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.369">
+      <PrivateAssets>none</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+      <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="MySqlConnector" Version="2.6.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <ProjectReference Include="ClientprefsApi\ClientprefsApi.csproj" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="src\lang\**\*.*" CopyToOutputDirectory="PreserveNewest" Link="lang\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+    <Target Name="ExcludeStoreApiFiles" AfterTargets="Build">
+    <ItemGroup>
+      <MicrosoftOutputFiles Include="$(OutputPath)Microsoft*" />
+      <SerilogOutputFiles Include="$(OutputPath)Serilog*" />
+    </ItemGroup>
+    <Delete Files="@(MicrosoftOutputFiles)" />
+    <Delete Files="@(SerilogOutputFiles)" />
+    <Delete Files="$(OutputPath)Tomlyn.dll" />
+		<Delete Files="$(OutputPath)ClientprefsApi.dll" />
+    <Delete Files="$(OutputPath)ClientprefsApi.pdb" />
+    <Delete Files="$(OutputPath)FastGenericNew.dll" />
+    <Delete Files="$(OutputPath)System.Diagnostics.EventLog.dll" />
+    <Delete Files="$(OutputPath)McMaster.NETCore.Plugins.dll" />
+    <RemoveDir Directories="$(OutputPath)runtimes" />
+  </Target>
+
+</Project>

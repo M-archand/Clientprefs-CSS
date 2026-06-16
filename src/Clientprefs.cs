@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Clientprefs;
 
-[MinimumApiVersion(361)]
+[MinimumApiVersion(369)]
 public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 {
     public override string ModuleName => "Clientprefs";

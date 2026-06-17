@@ -112,7 +112,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
         if (access == CookieAccess.CookieAccess_Protected)
         {
-            command.ReplyToCommand(Localizer["Prefix"] + Localizer["Protected Cookie"]);
+            command.ReplyToCommand(Localizer["Prefix"] + Localizer["Protected Cookie", name]);
             return;
         }
 

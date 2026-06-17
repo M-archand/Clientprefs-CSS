@@ -95,7 +95,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
         var steamId = player.SteamID.ToString();
 
-        if (!PlayerSettings[steamId].TryGetCookie(cookieId, out var cookie))
+        if (!PlayerSettings.TryGetValue(steamId, out var settings) || !settings.TryGetCookie(cookieId, out var cookie))
         {
             command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie not Found", name]);
             return;

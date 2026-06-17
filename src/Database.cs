@@ -257,12 +257,12 @@ public partial class Clientprefs
 		return await UpsertCookieAsync(name, description, access);
 	}
 
-	private void SavePlayerCookies(string steamId64 = "")
+	private Task SavePlayerCookies(string steamId64 = "")
 	{
 		if (!_databaseLoaded)
 		{
 			Logger.LogError($"SavePlayerCookies called when Database is not loaded yet.");
-			return;
+			return Task.CompletedTask;
 		}
 
 		var aPlayers = new Dictionary<string, List<ClientCookie>>();
@@ -271,12 +271,12 @@ public partial class Clientprefs
 		{
 			if (!PlayerSettings.ContainsKey(steamId64))
 			{
-				return;
+				return Task.CompletedTask;
 			}
 
 			if (!PlayerSettings[steamId64].Loaded)
 			{
-				return;
+				return Task.CompletedTask;
 			}
 
 			aPlayers.Add(steamId64, [.. PlayerSettings[steamId64].Cookies]);
@@ -299,11 +299,11 @@ public partial class Clientprefs
 			}
 		}
 
-		if (aPlayers.Count == 0) return;
+		if (aPlayers.Count == 0) return Task.CompletedTask;
 
 		int time = GetEpochTime();
 
-		Task.Run(async () =>
+		return Task.Run(async () =>
 		{
 			try
 			{

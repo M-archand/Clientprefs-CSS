@@ -54,7 +54,14 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         }
         _saveTimers.Clear();
 
-        SavePlayerCookies();
+        try
+        {
+            SavePlayerCookies().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"An error occurred while saving player(s) data during unload: {ex.Message}");
+        }
     }
 
     [ConsoleCommand("css_cookies", "sm_cookies <name> [value]")]

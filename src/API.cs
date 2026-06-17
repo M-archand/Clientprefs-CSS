@@ -59,7 +59,7 @@ public partial class Clientprefs
 
     public bool ClientPrefExists(string name)
     {
-        return _cookiesByName.ContainsKey(name) || Cookies.ContainsKey(LatestClientprefID);
+        return _cookiesByName.ContainsKey(name);
     }
 
     public int GetClientPrefByName(string name)

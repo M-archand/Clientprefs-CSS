@@ -59,7 +59,7 @@ public partial class Clientprefs
 			string playerquery = @$"CREATE TABLE IF NOT EXISTS {Config.TableNamePlayerData}
             (
                 steamid varchar(65) NOT NULL,
-                cookie_id int(10) NOT NULL,
+                cookie_id INT NOT NULL,
                 value varchar({IClientprefsApi.COOKIE_MAX_VALUE_LENGTH}),
                 timestamp int,
                 PRIMARY KEY (steamid, cookie_id)
@@ -87,7 +87,7 @@ public partial class Clientprefs
 				playerquery = @$"CREATE TABLE IF NOT EXISTS {Config.TableNamePlayerData}
                 (
                     steamid varchar(32) NOT NULL,
-                    cookie_id int(10) NOT NULL,
+                    cookie_id INT NOT NULL,
                     value varchar({IClientprefsApi.COOKIE_MAX_VALUE_LENGTH}),
                     timestamp int NOT NULL,
                     PRIMARY KEY (steamid, cookie_id)

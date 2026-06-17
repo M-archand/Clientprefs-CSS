@@ -48,6 +48,12 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     {
         base.Unload(hotReload);
 
+        foreach (var timer in _saveTimers)
+        {
+            timer.Kill();
+        }
+        _saveTimers.Clear();
+
         SavePlayerCookies();
     }
 
@@ -168,8 +174,11 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
     private void SaveDisconnectedPlayerCookies(string steamId, int attemptsLeft)
     {
-        AddTimer(0.1f, () =>
+        CounterStrikeSharp.API.Modules.Timers.Timer? timer = null;
+        timer = AddTimer(0.1f, () =>
         {
+            _saveTimers.Remove(timer!);
+
             if (attemptsLeft > 0 && PlayerSettings.TryGetValue(steamId, out var pref) && !pref.Loaded)
             {
                 SaveDisconnectedPlayerCookies(steamId, attemptsLeft - 1);
@@ -178,6 +187,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
             SavePlayerCookies(steamId);
         });
+        _saveTimers.Add(timer);
     }
 
     private HookResult OnMapEnd(CCSPlayerController? player, CommandInfo commandInfo)

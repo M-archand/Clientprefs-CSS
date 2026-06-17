@@ -91,6 +91,7 @@ public partial class Clientprefs
     private readonly object _clientprefIdLock = new();
 
     private ConcurrentDictionary<string, Cookie> _cookiesByName = new();
+    private readonly HashSet<CounterStrikeSharp.API.Modules.Timers.Timer> _saveTimers = new();
     private MySqlConnector.MySqlDataSource? _mySqlDataSource;
     private bool _databaseLoaded = false, _isMySQL = false;
 }

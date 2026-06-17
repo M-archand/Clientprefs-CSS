@@ -19,6 +19,44 @@ public partial class Clientprefs
 		return _isMySQL;
 	}
 
+	private bool IsDatabaseConfigComplete()
+	{
+		if (!IsMySQL()) return true;
+
+		return Config.DatabaseHost != "" && Config.DatabaseName != ""
+			&& Config.DatabaseUsername != "" && Config.DatabasePassword != "";
+	}
+
+	// Retries transient DB connect failures with backoff so OnDatabaseLoaded still fires; misconfiguration is not retried.
+	private async Task ConnectDatabaseTableWithRetry()
+	{
+		if (!IsDatabaseConfigComplete())
+		{
+			Server.NextWorldUpdate(() => Logger.LogError("Database connection information is missing. Please fill in the information in the config file."));
+			return;
+		}
+
+		const int maxAttempts = 5;
+
+		for (int attempt = 1; attempt <= maxAttempts; attempt++)
+		{
+			if (await ConnectDatabaseTable())
+			{
+				return;
+			}
+
+			if (attempt < maxAttempts)
+			{
+				int delaySeconds = Math.Min(30, attempt * 5);
+				int currentAttempt = attempt;
+				Server.NextWorldUpdate(() => Logger.LogWarning($"Database connection attempt {currentAttempt}/{maxAttempts} failed. Retrying in {delaySeconds}s..."));
+				await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+			}
+		}
+
+		Server.NextWorldUpdate(() => Logger.LogError($"Database connection failed after {maxAttempts} attempts. Clientprefs is disabled; dependent plugins will not receive OnDatabaseLoaded."));
+	}
+
 	private void BuildMySqlDataSource()
 	{
 		MySqlConnectionStringBuilder builder = new MySqlConnectionStringBuilder
@@ -67,7 +105,7 @@ public partial class Clientprefs
 
 			if (IsMySQL())
 			{
-				if (Config.DatabaseHost == "" || Config.DatabaseName == "" || Config.DatabaseUsername == "" || Config.DatabasePassword == "")
+				if (!IsDatabaseConfigComplete())
 				{
 					Logger.LogError($"Database connection information is missing. Please fill in the information in the config file.");
 					return false;

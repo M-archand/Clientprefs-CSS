@@ -98,6 +98,11 @@ public partial class Clientprefs
 			{
 				await connection.OpenAsync();
 
+				if (!IsMySQL())
+				{
+					await connection.ExecuteAsync("PRAGMA journal_mode=WAL;");
+				}
+
 				using (var transaction = await connection.BeginTransactionAsync())
 				{
 					await connection.ExecuteAsync(cookiequery, transaction: transaction);
@@ -144,6 +149,7 @@ public partial class Clientprefs
 
 				Server.NextWorldUpdate(() =>
 				{
+					var steamIds = new List<string>();
 					foreach (var p in Utilities.GetPlayers())
 					{
 						if (p == null || !p.IsValidPlayer())
@@ -151,9 +157,10 @@ public partial class Clientprefs
 							continue;
 						}
 
-						var steamId = p.SteamID.ToString();
-						GetPlayerCookies(steamId);
+						steamIds.Add(p.SteamID.ToString());
 					}
+
+					GetPlayerCookiesBatch(steamIds);
 
 					TryFireDatabaseLoaded();
 
@@ -168,6 +175,78 @@ public partial class Clientprefs
 			Server.NextWorldUpdate(() => Logger.LogError($"Unable to connect to database: {ex.Message}"));
 			return false;
 		}
+	}
+
+	// Bulk-loads cookie rows for all given steamIds via one WHERE steamid IN (...) query on a single background Task, 
+	// then marks each PlayerSetting as Loaded.
+	private void GetPlayerCookiesBatch(List<string> steamIds)
+	{
+		if (!_databaseLoaded)
+		{
+			Logger.LogError($"GetPlayerCookiesBatch called when Database is not loaded yet.");
+			return;
+		}
+
+		if (steamIds.Count == 0) return;
+
+		foreach (var steamId in steamIds)
+		{
+			PlayerSettings.GetOrAdd(steamId, _ => new());
+		}
+
+		Task.Run(async () =>
+		{
+			try
+			{
+				using (var connection = CreateConnection())
+				{
+					await connection.OpenAsync();
+
+					string query = $"SELECT steamid, cookie_id, value FROM {Config.TableNamePlayerData} WHERE steamid IN @steamIds";
+
+					var rows = await connection.QueryAsync(query, new { steamIds });
+
+					foreach (var row in rows)
+					{
+						var steamId = (string)row.steamid;
+						if (PlayerSettings.TryGetValue(steamId, out var pref))
+						{
+							pref.LoadCookie((int)row.cookie_id, (string)(row.value ?? ""));
+						}
+					}
+
+					foreach (var steamId in steamIds)
+					{
+						if (PlayerSettings.TryGetValue(steamId, out var pref))
+						{
+							pref.Loaded = true;
+						}
+					}
+
+					Server.NextWorldUpdate(() =>
+					{
+						foreach (var player in Utilities.GetPlayers())
+						{
+							if (player == null || !player.IsValidPlayer()) continue;
+							if (!steamIds.Contains(player.SteamID.ToString())) continue;
+
+							ClientprefsApi.CallOnPlayerCookiesCached(player);
+						}
+					});
+				}
+			}
+			catch (Exception ex)
+			{
+				foreach (var steamId in steamIds)
+				{
+					if (PlayerSettings.TryGetValue(steamId, out var pref))
+					{
+						pref.LoadFailed = true;
+					}
+				}
+				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while fetching player preferences: {ex.Message}"));
+			}
+		});
 	}
 
 	private void GetPlayerCookies(string steamId)

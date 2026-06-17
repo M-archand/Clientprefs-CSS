@@ -311,12 +311,17 @@ public partial class Clientprefs
 
 					foreach (var row in rows)
 					{
-						PlayerSettings[steamId].LoadCookie((int)row.cookie_id, (string)(row.value ?? ""));
+						if (PlayerSettings.TryGetValue(steamId, out var pref))
+						{
+							pref.LoadCookie((int)row.cookie_id, (string)(row.value ?? ""));
+						}
 					}
 
-					PlayerSettings[steamId].Loaded = true;
-
-					DebugLog($"Cookies for {steamId} loaded: {PlayerSettings[steamId].CookieCount}");
+					if (PlayerSettings.TryGetValue(steamId, out var loaded))
+					{
+						loaded.Loaded = true;
+						DebugLog($"Cookies for {steamId} loaded: {loaded.CookieCount}");
+					}
 
 					Server.NextWorldUpdate(() =>
 					{

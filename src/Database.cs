@@ -175,10 +175,7 @@ public partial class Clientprefs
 			return;
 		}
 
-		if (!PlayerSettings.ContainsKey(steamId))
-		{
-			PlayerSettings.Add(steamId, new());
-		}
+		PlayerSettings.GetOrAdd(steamId, _ => new());
 
 		Task.Run(async () =>
 		{
@@ -304,7 +301,7 @@ public partial class Clientprefs
 			}
 
 			aPlayers.Add(steamId64, [.. PlayerSettings[steamId64].Cookies]);
-			PlayerSettings.Remove(steamId64);
+			PlayerSettings.TryRemove(steamId64, out _);
 		}
 		else
 		{
@@ -319,7 +316,7 @@ public partial class Clientprefs
 				}
 
 				aPlayers.Add(steamId, [.. value.Cookies]);
-				PlayerSettings.Remove(steamId);
+				PlayerSettings.TryRemove(steamId, out _);
 			}
 		}
 

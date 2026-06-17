@@ -35,12 +35,7 @@ public partial class Clientprefs
 
     public void AddPlayerClientPrefNewValue(string steamId, int cookieId, string value)
     {
-        if (!PlayerSettings.ContainsKey(steamId))
-        {
-            PlayerSettings.Add(steamId, new());
-        }
-
-        PlayerSettings[steamId].ModifyCookie(cookieId, newValue: value);
+        PlayerSettings.GetOrAdd(steamId, _ => new()).ModifyCookie(cookieId, newValue: value);
     }
 
     public int ClientPrefCount()

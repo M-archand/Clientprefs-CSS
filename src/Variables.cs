@@ -1,5 +1,6 @@
 using CounterStrikeSharp.API.Core.Capabilities;
 using Clientprefs.API;
+using System.Collections.Concurrent;
 
 namespace Clientprefs;
 
@@ -87,7 +88,7 @@ public partial class Clientprefs
     public PluginCapability<IClientprefsApi> PluginCapability = new("Clientprefs");
     public required ClientprefsApi ClientprefsApi { get; set; }
     public Dictionary<int, Cookie> Cookies = new();
-    public Dictionary<string, PlayerSetting> PlayerSettings = new();
+    public ConcurrentDictionary<string, PlayerSetting> PlayerSettings = new();
     public int LatestClientprefID = 0;
 
     private Dictionary<string, Cookie> _cookiesByName = new();

@@ -190,6 +190,8 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     {
         var player = @event.Userid;
 
+        // Reason 1 = NetworkDisconnectionReason.NETWORK_DISCONNECT_SHUTDOWN (server shutdown / map change).
+        // Those cookies are already flushed by OnMapEnd and Unload, so skip the per-player save here.
         if (player == null || !player.IsValidPlayer() || @event.Reason == 1)
         {
             return HookResult.Continue;

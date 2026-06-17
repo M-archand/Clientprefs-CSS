@@ -187,7 +187,7 @@ public class ClientprefsApi : IClientprefsApi
 
         if (value.Length > IClientprefsApi.COOKIE_MAX_VALUE_LENGTH)
         {
-            _plugin.LogWarning($"RegPlayerCookie was used with value being too long");
+            throw new Exception($"SetPlayerCookie failed: value length {value.Length} exceeds COOKIE_MAX_VALUE_LENGTH ({IClientprefsApi.COOKIE_MAX_VALUE_LENGTH}) for cookie id {cookieId}");
         }
 
         if (!_plugin.PlayerSettings.TryGetValue(player.SteamID.ToString(), out var pref) || !pref.Loaded)

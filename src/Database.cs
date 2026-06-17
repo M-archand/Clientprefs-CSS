@@ -19,21 +19,28 @@ public partial class Clientprefs
 		return _isMySQL;
 	}
 
+	private void BuildMySqlDataSource()
+	{
+		MySqlConnectionStringBuilder builder = new MySqlConnectionStringBuilder
+		{
+			Server = Config.DatabaseHost,
+			UserID = Config.DatabaseUsername,
+			Password = Config.DatabasePassword,
+			Database = Config.DatabaseName,
+			Port = (uint)Config.DatabasePort,
+			SslMode = Enum.Parse<MySqlSslMode>(Config.DatabaseSslmode, true),
+			AllowUserVariables = true,
+		};
+
+		_mySqlDataSource?.Dispose();
+		_mySqlDataSource = new MySqlDataSource(builder.ToString());
+	}
+
 	private DbConnection CreateConnection()
 	{
 		if (IsMySQL())
 		{
-			MySqlConnectionStringBuilder builder = new MySqlConnectionStringBuilder
-			{
-				Server = Config.DatabaseHost,
-				UserID = Config.DatabaseUsername,
-				Password = Config.DatabasePassword,
-				Database = Config.DatabaseName,
-				Port = (uint)Config.DatabasePort,
-				SslMode = Enum.Parse<MySqlSslMode>(Config.DatabaseSslmode, true),
-				AllowUserVariables = true,
-			};
-			return new MySqlConnection(builder.ToString());
+			return _mySqlDataSource!.CreateConnection();
 		}
 		return new SqliteConnection($"Data Source={Path.Join(ModuleDirectory, "clientprefs.db")}");
 	}
@@ -69,6 +76,8 @@ public partial class Clientprefs
 					Logger.LogError($"Database connection information is missing. Please fill in the information in the config file.");
 					return false;
 				}
+
+				BuildMySqlDataSource();
 
 				cookiequery = @$"CREATE TABLE IF NOT EXISTS {Config.TableName}
                 (

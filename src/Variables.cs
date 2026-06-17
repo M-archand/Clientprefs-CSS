@@ -91,5 +91,6 @@ public partial class Clientprefs
     public int LatestClientprefID = 0;
 
     private Dictionary<string, Cookie> _cookiesByName = new();
+    private MySqlConnector.MySqlDataSource? _mySqlDataSource;
     private bool _databaseLoaded = false, _isMySQL = false;
 }

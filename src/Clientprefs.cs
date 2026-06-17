@@ -186,10 +186,19 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         {
             _saveTimers.Remove(timer!);
 
-            if (attemptsLeft > 0 && PlayerSettings.TryGetValue(steamId, out var pref) && !pref.Loaded)
+            if (PlayerSettings.TryGetValue(steamId, out var pref))
             {
-                SaveDisconnectedPlayerCookies(steamId, attemptsLeft - 1);
-                return;
+                if (pref.LoadFailed)
+                {
+                    PlayerSettings.TryRemove(steamId, out _);
+                    return;
+                }
+
+                if (attemptsLeft > 0 && !pref.Loaded)
+                {
+                    SaveDisconnectedPlayerCookies(steamId, attemptsLeft - 1);
+                    return;
+                }
             }
 
             SavePlayerCookies(steamId);

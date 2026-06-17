@@ -213,6 +213,10 @@ public partial class Clientprefs
 			}
 			catch (Exception ex)
 			{
+				if (PlayerSettings.TryGetValue(steamId, out var pref))
+				{
+					pref.LoadFailed = true;
+				}
 				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while fetching player preferences: {ex.Message}"));
 			}
 		});

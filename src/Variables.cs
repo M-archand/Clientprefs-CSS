@@ -39,6 +39,7 @@ public partial class Clientprefs
     public class PlayerSetting
     {
         public bool Loaded { get; set; } = false;
+        public bool LoadFailed { get; set; } = false;
         private ConcurrentDictionary<int, ClientCookie> _cookieDict { get; set; } = new();
 
         public PlayerSetting()

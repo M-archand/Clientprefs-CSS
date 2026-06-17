@@ -108,55 +108,56 @@ public partial class Clientprefs
 					await connection.ExecuteAsync(playerquery, transaction: transaction);
 
 					await transaction.CommitAsync();
+				}
 
-					cookiequery = @$"SELECT * FROM {Config.TableName}";
+				cookiequery = @$"SELECT * FROM {Config.TableName}";
 
-					var rows = await connection.QueryAsync(cookiequery);
+				var rows = await connection.QueryAsync(cookiequery);
 
-					foreach (var row in rows)
+				foreach (var row in rows)
+				{
+					if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;
+
+					if ((int)row.id > LatestClientprefID)
 					{
-						if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;
-
-						if ((int)row.id > LatestClientprefID)
-						{
-							LatestClientprefID = (int)row.id;
-						}
-
-						var cookie = new Cookie
-						{
-							Id = (int)row.id,
-							Name = row.name,
-							Description = row.description,
-							Access = (CookieAccess)row.access,
-						};
-						Cookies[cookie.Id] = cookie;
-						_cookiesByName[cookie.Name] = cookie;
+						LatestClientprefID = (int)row.id;
 					}
 
-					_databaseLoaded = true;
-
-					if (LatestClientprefID > 0)
-						LatestClientprefID++;
-
-					Server.NextWorldUpdate(() =>
+					var cookie = new Cookie
 					{
-						foreach (var p in Utilities.GetPlayers())
-						{
-							if (p == null || !p.IsValidPlayer())
-							{
-								continue;
-							}
+						Id = (int)row.id,
+						Name = row.name,
+						Description = row.description,
+						Access = (CookieAccess)row.access,
+					};
+					Cookies[cookie.Id] = cookie;
+					_cookiesByName[cookie.Name] = cookie;
+				}
 
-							var steamId = p.SteamID.ToString();
-							GetPlayerCookies(steamId);
+				_databaseLoaded = true;
+
+				if (LatestClientprefID > 0)
+					LatestClientprefID++;
+
+				Server.NextWorldUpdate(() =>
+				{
+					foreach (var p in Utilities.GetPlayers())
+					{
+						if (p == null || !p.IsValidPlayer())
+						{
+							continue;
 						}
 
-						// Timer so that other plugin can catch this event else this is called before AllPluginsLoaded
-						AddTimer(2.0f, ClientprefsApi.CallOnDatabaseLoaded);
+						var steamId = p.SteamID.ToString();
+						GetPlayerCookies(steamId);
+					}
 
-						DebugLog("Database connection established.");
-					});
-				}
+					// Timer so that other plugin can catch this event else this is called before AllPluginsLoaded
+					AddTimer(2.0f, ClientprefsApi.CallOnDatabaseLoaded);
+
+					DebugLog("Database connection established.");
+				});
+
 				return true;
 			}
 		}

@@ -35,6 +35,8 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         Capabilities.RegisterPluginCapability(PluginCapability, () => ClientprefsApi);
 
         _databaseLoaded = false;
+        _allPluginsLoaded = false;
+        _databaseLoadedEventFired = false;
 
         _ = Task.Run(ConnectDatabaseTable);
 
@@ -42,6 +44,25 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         AddCommandListener("map", OnMapEnd, HookMode.Pre);
         AddCommandListener("host_workshop_map", OnMapEnd, HookMode.Pre);
         AddCommandListener("ds_workshop_changelevel", OnMapEnd, HookMode.Pre);
+    }
+
+    public override void OnAllPluginsLoaded(bool hotReload)
+    {
+        base.OnAllPluginsLoaded(hotReload);
+
+        _allPluginsLoaded = true;
+        TryFireDatabaseLoaded();
+    }
+
+    private void TryFireDatabaseLoaded()
+    {
+        if (_databaseLoadedEventFired || !_databaseLoaded || !_allPluginsLoaded)
+        {
+            return;
+        }
+
+        _databaseLoadedEventFired = true;
+        ClientprefsApi.CallOnDatabaseLoaded();
     }
 
     public override void Unload(bool hotReload)

@@ -95,4 +95,5 @@ public partial class Clientprefs
     private readonly HashSet<CounterStrikeSharp.API.Modules.Timers.Timer> _saveTimers = new();
     private MySqlConnector.MySqlDataSource? _mySqlDataSource;
     private bool _databaseLoaded = false, _isMySQL = false;
+    private bool _allPluginsLoaded = false, _databaseLoadedEventFired = false;
 }

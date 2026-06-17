@@ -155,8 +155,7 @@ public partial class Clientprefs
 						GetPlayerCookies(steamId);
 					}
 
-					// Timer so that other plugin can catch this event else this is called before AllPluginsLoaded
-					AddTimer(2.0f, ClientprefsApi.CallOnDatabaseLoaded);
+					TryFireDatabaseLoaded();
 
 					DebugLog("Database connection established.");
 				});

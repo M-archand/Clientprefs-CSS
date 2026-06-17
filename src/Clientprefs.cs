@@ -14,8 +14,8 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 {
     public override string ModuleName => "Clientprefs";
     public override string ModuleDescription => "Clientprefs plugin for CounterStrikeSharp";
-    public override string ModuleAuthor => "Cruze";
-    public override string ModuleVersion => "1.0.7";
+    public override string ModuleAuthor => "Cruze, Marchand";
+    public override string ModuleVersion => "1.1.0";
 
     public void OnConfigParsed(ClientprefsConfig config)
     {

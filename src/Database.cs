@@ -302,9 +302,13 @@ public partial class Clientprefs
 
 	private async Task<bool> UpsertCookieAsync(string name, string description, CookieAccess access)
 	{
-		string query = @$"REPLACE INTO `{Config.TableName}`
-            (name, description, access)
-            VALUES (@name, @description, @access);";
+		string query = IsMySQL()
+			? @$"INSERT INTO `{Config.TableName}` (name, description, access)
+            VALUES (@name, @description, @access)
+            ON DUPLICATE KEY UPDATE description = @description, access = @access;"
+			: @$"INSERT INTO `{Config.TableName}` (name, description, access)
+            VALUES (@name, @description, @access)
+            ON CONFLICT(name) DO UPDATE SET description = @description, access = @access;";
 
 		try
 		{

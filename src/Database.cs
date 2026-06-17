@@ -300,7 +300,7 @@ public partial class Clientprefs
 		});
 	}
 
-	private async Task<bool> UpsertCookieAsync(string name, string description, CookieAccess access)
+	private async Task<int> UpsertCookieAsync(string name, string description, CookieAccess access)
 	{
 		string query = IsMySQL()
 			? @$"INSERT INTO `{Config.TableName}` (name, description, access)
@@ -316,25 +316,29 @@ public partial class Clientprefs
 			{
 				await connection.OpenAsync();
 
-				await connection.QueryAsync(query, new { name, description, access = (int)access });
+				await connection.ExecuteAsync(query, new { name, description, access = (int)access });
 
-				DebugLog($"Created playercookie with name {name}");
+				int id = await connection.QuerySingleAsync<int>(
+					@$"SELECT id FROM `{Config.TableName}` WHERE name = @name;",
+					new { name });
+
+				DebugLog($"Created playercookie with name {name} (id {id})");
+				return id;
 			}
 		}
 		catch (Exception ex)
 		{
 			Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while creating a player cookie: {ex.Message}"));
-			return false;
+			return -1;
 		}
-		return true;
 	}
 
-	public async Task<bool> CreatePlayerCookieNew(string name, string description, CookieAccess access)
+	public async Task<int> CreatePlayerCookieNew(string name, string description, CookieAccess access)
 	{
 		if (!_databaseLoaded)
 		{
 			Logger.LogError($"CreatePlayerCookieNew called when Database is not loaded yet.");
-			return false;
+			return -1;
 		}
 
 		return await UpsertCookieAsync(name, description, access);

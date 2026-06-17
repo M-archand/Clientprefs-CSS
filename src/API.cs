@@ -6,12 +6,10 @@ namespace Clientprefs;
 
 public partial class Clientprefs
 {
-    public int AddClientprefCommands(string name, string description, CookieAccess access)
+    public int AddClientprefCommands(int id, string name, string description, CookieAccess access)
     {
         lock (_clientprefIdLock)
         {
-            int id = LatestClientprefID;
-            LatestClientprefID++;
             var cookie = new Cookie()
             {
                 Id = id,
@@ -21,6 +19,10 @@ public partial class Clientprefs
             };
             Cookies[cookie.Id] = cookie;
             _cookiesByName[cookie.Name] = cookie;
+            if (id >= LatestClientprefID)
+            {
+                LatestClientprefID = id + 1;
+            }
             return id;
         }
     }
@@ -116,16 +118,14 @@ public class ClientprefsApi : IClientprefsApi
             _plugin.LogWarning($"RegPlayerCookieAsync was used with description being too long");
         }
 
-        bool success = await _plugin.CreatePlayerCookieNew(name, description, access);
+        int id = await _plugin.CreatePlayerCookieNew(name, description, access);
 
-        if (success)
-        {
-            return _plugin.AddClientprefCommands(name, description, access);
-        }
-        else
+        if (id < 0)
         {
             return -1;
         }
+
+        return _plugin.AddClientprefCommands(id, name, description, access);
     }
 
     public int FindPlayerCookie(string name)

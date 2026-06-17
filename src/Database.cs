@@ -316,6 +316,7 @@ public partial class Clientprefs
 						{
 							var steamId = pair.Key;
 							var cookies = pair.Value;
+							var deleteIds = new List<int>();
 
 							foreach (var pref in cookies)
 							{
@@ -327,13 +328,7 @@ public partial class Clientprefs
 
 								if (isNewValueNull)
 								{
-									query = @$"DELETE FROM `{Config.TableNamePlayerData}`
-									WHERE steamid = @steam AND cookie_id = @id;";
-
-									await connection.ExecuteAsync(query,
-									new { steam = steamId, id = pref.Id },
-									transaction: transaction);
-									DebugLog($"Saving cookies {pref.Id} for {steamId}");
+									deleteIds.Add(pref.Id);
 									continue;
 								}
 
@@ -345,6 +340,17 @@ public partial class Clientprefs
 								new { steam = steamId, id = pref.Id, value = pref.NewValue, timestamp = time },
 								transaction: transaction);
 								DebugLog($"Saving cookies {pref.Id} for {steamId}");
+							}
+
+							if (deleteIds.Count > 0)
+							{
+								query = @$"DELETE FROM `{Config.TableNamePlayerData}`
+								WHERE steamid = @steam AND cookie_id IN @ids;";
+
+								await connection.ExecuteAsync(query,
+								new { steam = steamId, ids = deleteIds },
+								transaction: transaction);
+								DebugLog($"Deleting {deleteIds.Count} cookies for {steamId}");
 							}
 						}
 						await transaction.CommitAsync();

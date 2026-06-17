@@ -30,9 +30,21 @@ public partial class Clientprefs
         return -1;
     }
 
+    public bool TryGetCookieAccess(int cookieId, out CookieAccess access)
+    {
+        if (Cookies.TryGetValue(cookieId, out var cookie))
+        {
+            access = cookie.Access;
+            return true;
+        }
+        access = default;
+        return false;
+    }
+
     public CookieAccess GetCookieAccess(int cookieId)
     {
-        return Cookies[cookieId].Access;
+        TryGetCookieAccess(cookieId, out var access);
+        return access;
     }
 
     public void AddPlayerClientPrefNewValue(string steamId, int cookieId, string value)

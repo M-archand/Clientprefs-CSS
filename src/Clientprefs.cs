@@ -85,7 +85,11 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
             return;
         }
 
-        CookieAccess access = GetCookieAccess(cookieId);
+        if (!TryGetCookieAccess(cookieId, out var access))
+        {
+            command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie not Found", name]);
+            return;
+        }
 
         if (access == CookieAccess.CookieAccess_Private)
         {

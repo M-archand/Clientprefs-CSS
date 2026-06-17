@@ -7,7 +7,14 @@ internal static class CCSPlayerControllerEx
 {
     internal static bool IsValidPlayer(this CCSPlayerController? controller)
     {
-        return controller != null && controller.IsValid && controller.Handle != IntPtr.Zero && controller.Connected == PlayerConnectedState.Connected && !controller.IsHLTV && controller.SteamID.ToString().Length == 17;
+        if (controller == null || !controller.IsValid || controller.Handle == IntPtr.Zero
+            || controller.Connected != PlayerConnectedState.Connected || controller.IsHLTV
+            || controller.IsBot || controller.SteamID.ToString().Length != 17)
+        {
+            return false;
+        }
+
+        return true;
     }
 }
 

@@ -40,6 +40,7 @@
     <Delete Files="@(MicrosoftOutputFiles)" />
     <Delete Files="@(SerilogOutputFiles)" />
     <Delete Files="$(OutputPath)Tomlyn.dll" />
+    <Delete Files="$(OutputPath)Scrutor.dll" />
 		<Delete Files="$(OutputPath)ClientprefsApi.dll" />
     <Delete Files="$(OutputPath)ClientprefsApi.pdb" />
     <Delete Files="$(OutputPath)FastGenericNew.dll" />

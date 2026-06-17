@@ -175,11 +175,6 @@ public class ClientprefsApi : IClientprefsApi
 
         var steamId = player.SteamID.ToString();
 
-        if (!_plugin.PlayerSettings.TryGetValue(steamId, out var _))
-        {
-            throw new Exception($"SetPlayerCookie failed due to it being called before cookies were loaded for player {steamId}");
-        }
-
         _plugin.AddPlayerClientPrefNewValue(steamId, cookieId, value);
     }
 

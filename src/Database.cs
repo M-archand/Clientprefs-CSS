@@ -240,18 +240,6 @@ public partial class Clientprefs
 		return true;
 	}
 
-	public bool CreatePlayerCookie(string name, string description, CookieAccess access)
-	{
-		if (!_databaseLoaded)
-		{
-			Logger.LogError($"CreatePlayerCookie called when Database is not loaded yet.");
-			return false;
-		}
-
-		_ = Task.Run(() => UpsertCookieAsync(name, description, access));
-		return true;
-	}
-
 	public async Task<bool> CreatePlayerCookieNew(string name, string description, CookieAccess access)
 	{
 		if (!_databaseLoaded)

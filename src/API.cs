@@ -96,32 +96,6 @@ public class ClientprefsApi : IClientprefsApi
         OnPlayerCookiesCached?.Invoke(player);
     }
 
-    public int RegPlayerCookie(string name, string description, CookieAccess access = CookieAccess.CookieAccess_Public)
-    {
-        if (_plugin.ClientPrefExists(name))
-        {
-            return _plugin.GetClientPrefByName(name);
-        }
-
-        if (name.Length > IClientprefsApi.COOKIE_MAX_NAME_LENGTH)
-        {
-            _plugin.LogWarning($"RegPlayerCookie was used with name being too long");
-        }
-        if (description.Length > IClientprefsApi.COOKIE_MAX_DESCRIPTION_LENGTH)
-        {
-            _plugin.LogWarning($"RegPlayerCookie was used with description being too long");
-        }
-
-        if (_plugin.CreatePlayerCookie(name, description, access))
-        {
-            return _plugin.AddClientprefCommands(name, description, access);
-        }
-        else
-        {
-            return -1;
-        }
-    }
-
     public async Task<int> RegPlayerCookieAsync(string name, string description, CookieAccess access = CookieAccess.CookieAccess_Public)
     {
         if (_plugin.ClientPrefExists(name))

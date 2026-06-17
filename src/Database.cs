@@ -148,7 +148,7 @@ public partial class Clientprefs
 							}
 
 							var steamId = p.SteamID.ToString();
-							GetPlayerCookies(p, steamId);
+							GetPlayerCookies(steamId);
 						}
 
 						// Timer so that other plugin can catch this event else this is called before AllPluginsLoaded
@@ -167,7 +167,7 @@ public partial class Clientprefs
 		}
 	}
 
-	private void GetPlayerCookies(CCSPlayerController player, string steamId)
+	private void GetPlayerCookies(string steamId)
 	{
 		if (!_databaseLoaded)
 		{
@@ -200,7 +200,8 @@ public partial class Clientprefs
 
 					Server.NextWorldUpdate(() =>
 					{
-						if (!player.IsValidPlayer()) return;
+						var player = Utilities.GetPlayers().FirstOrDefault(p => p.IsValidPlayer() && p.SteamID.ToString() == steamId);
+						if (player == null) return;
 
 						ClientprefsApi.CallOnPlayerCookiesCached(player);
 					});

@@ -143,7 +143,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         }
 
         var steamId = player.SteamID.ToString();
-        GetPlayerCookies(player, steamId);
+        GetPlayerCookies(steamId);
         return HookResult.Continue;
     }
 

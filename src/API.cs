@@ -186,10 +186,14 @@ public class ClientprefsApi : IClientprefsApi
 
     public void SetPlayerCookie(string steamId, int cookieId, string value)
     {
-        if (!_plugin.PlayerSettings.TryGetValue(steamId, out var _))
+        if (value.Length > IClientprefsApi.COOKIE_MAX_VALUE_LENGTH)
         {
-            _plugin.AddPlayerClientPrefNewValue(steamId, cookieId, value);
-            return;
+            throw new Exception($"SetPlayerCookie failed: value length {value.Length} exceeds COOKIE_MAX_VALUE_LENGTH ({IClientprefsApi.COOKIE_MAX_VALUE_LENGTH}) for cookie id {cookieId}");
+        }
+
+        if (!_plugin.PlayerSettings.TryGetValue(steamId, out var pref) || !pref.Loaded)
+        {
+            throw new Exception($"SetPlayerCookie failed due to it being called before cookies were loaded for player {steamId}");
         }
 
         _plugin.AddPlayerClientPrefNewValue(steamId, cookieId, value);

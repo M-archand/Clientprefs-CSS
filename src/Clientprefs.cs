@@ -155,6 +155,12 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
         value = command.GetArg(2);
 
+        if (value.Length > IClientprefsApi.COOKIE_MAX_VALUE_LENGTH)
+        {
+            command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie Value Too Long", name, IClientprefsApi.COOKIE_MAX_VALUE_LENGTH]);
+            return;
+        }
+
         cookie.NewValue = value;
         command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie Changed Value", name, value]);
     }

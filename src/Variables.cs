@@ -25,13 +25,13 @@ public partial class Clientprefs
     public class ClientCookie
     {
         public int Id { get; set; } = -1;
-        public string OldValue { get; set; } = "";
-        public string NewValue { get; set; } = "";  // save if oldvalue != newvalue
+        public string? OldValue { get; set; } = null;  // null = no persisted DB row, "" = persisted empty value
+        public string NewValue { get; set; } = "";     // save if oldvalue != newvalue
 
         public ClientCookie()
         {
             Id = -1;
-            OldValue = "";
+            OldValue = null;
             NewValue = "";
         }
     }
@@ -48,21 +48,35 @@ public partial class Clientprefs
             _cookieDict = new();
         }
 
-        public void ModifyCookie(int id, string oldValue = "", string newValue = "")
+        public void LoadCookie(int id, string dbValue)
         {
             _cookieDict.AddOrUpdate(id,
                 _ => new ClientCookie
                 {
                     Id = id,
-                    OldValue = oldValue,
-                    NewValue = newValue
+                    OldValue = dbValue,
+                    NewValue = dbValue
                 },
                 (_, cookie) =>
                 {
-                    if (!string.IsNullOrWhiteSpace(oldValue))
-                        cookie.OldValue = oldValue;
-                    if (!string.IsNullOrWhiteSpace(newValue))
-                        cookie.NewValue = newValue;
+                    cookie.OldValue = dbValue;
+                    cookie.NewValue = dbValue;
+                    return cookie;
+                });
+        }
+
+        public void SetCookie(int id, string value)
+        {
+            _cookieDict.AddOrUpdate(id,
+                _ => new ClientCookie
+                {
+                    Id = id,
+                    OldValue = null,
+                    NewValue = value
+                },
+                (_, cookie) =>
+                {
+                    cookie.NewValue = value;
                     return cookie;
                 });
         }

@@ -53,7 +53,7 @@ public partial class Clientprefs
 
     public void AddPlayerClientPrefNewValue(string steamId, int cookieId, string value)
     {
-        PlayerSettings.GetOrAdd(steamId, _ => new()).ModifyCookie(cookieId, newValue: value);
+        PlayerSettings.GetOrAdd(steamId, _ => new()).SetCookie(cookieId, value);
     }
 
     public int ClientPrefCount()

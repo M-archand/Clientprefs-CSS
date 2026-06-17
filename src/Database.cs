@@ -194,7 +194,7 @@ public partial class Clientprefs
 
 					foreach (var row in rows)
 					{
-						PlayerSettings[steamId].ModifyCookie((int)row.cookie_id, row.value, row.value);
+						PlayerSettings[steamId].LoadCookie((int)row.cookie_id, (string)(row.value ?? ""));
 					}
 
 					PlayerSettings[steamId].Loaded = true;
@@ -323,17 +323,20 @@ public partial class Clientprefs
 
 							foreach (var pref in cookies)
 							{
-								var isNewValueNull = string.IsNullOrWhiteSpace(pref.NewValue);
-
-								if (pref.OldValue == pref.NewValue && !isNewValueNull) continue;
-
 								if (!Cookies.ContainsKey(pref.Id)) continue;
 
-								if (isNewValueNull)
+								var isNewValueEmpty = string.IsNullOrWhiteSpace(pref.NewValue);
+
+								if (isNewValueEmpty)
 								{
-									deleteIds.Add(pref.Id);
+									if (pref.OldValue != null)
+									{
+										deleteIds.Add(pref.Id);
+									}
 									continue;
 								}
+
+								if (pref.OldValue == pref.NewValue) continue;
 
 								query = @$"REPLACE INTO `{Config.TableNamePlayerData}`
                                 (steamid, cookie_id, value, timestamp)

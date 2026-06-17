@@ -6,17 +6,19 @@ namespace Clientprefs;
 
 public partial class Clientprefs
 {
-    public void AddClientprefCommands(string name, string description, CookieAccess access)
+    public int AddClientprefCommands(string name, string description, CookieAccess access)
     {
+        int id = Interlocked.Increment(ref LatestClientprefID) - 1;
         var cookie = new Cookie()
         {
-            Id = LatestClientprefID,
+            Id = id,
             Name = name,
             Description = description,
             Access = access
         };
         Cookies[cookie.Id] = cookie;
         _cookiesByName[cookie.Name] = cookie;
+        return id;
     }
 
     public int FindPlayerCookie(string name)
@@ -100,8 +102,7 @@ public class ClientprefsApi : IClientprefsApi
 
         if (_plugin.CreatePlayerCookie(name, description, access))
         {
-            _plugin.AddClientprefCommands(name, description, access);
-            return _plugin.LatestClientprefID++;
+            return _plugin.AddClientprefCommands(name, description, access);
         }
         else
         {
@@ -129,8 +130,7 @@ public class ClientprefsApi : IClientprefsApi
 
         if (success)
         {
-            _plugin.AddClientprefCommands(name, description, access);
-            return _plugin.LatestClientprefID++;
+            return _plugin.AddClientprefCommands(name, description, access);
         }
         else
         {

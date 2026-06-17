@@ -39,7 +39,7 @@ public partial class Clientprefs
     public class PlayerSetting
     {
         public bool Loaded { get; set; } = false;
-        private Dictionary<int, ClientCookie> _cookieDict { get; set; } = [];
+        private ConcurrentDictionary<int, ClientCookie> _cookieDict { get; set; } = new();
 
         public PlayerSetting()
         {
@@ -49,23 +49,21 @@ public partial class Clientprefs
 
         public void ModifyCookie(int id, string oldValue = "", string newValue = "")
         {
-            if (_cookieDict.TryGetValue(id, out var cookie))
-            {
-                if (!string.IsNullOrWhiteSpace(oldValue))
-                    cookie.OldValue = oldValue;
-                if (!string.IsNullOrWhiteSpace(newValue))
-                    cookie.NewValue = newValue;
-                return;
-            }
-
-            var newCookie = new ClientCookie
-            {
-                Id = id,
-                OldValue = oldValue,
-                NewValue = newValue
-            };
-
-            _cookieDict.Add(id, newCookie);
+            _cookieDict.AddOrUpdate(id,
+                _ => new ClientCookie
+                {
+                    Id = id,
+                    OldValue = oldValue,
+                    NewValue = newValue
+                },
+                (_, cookie) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(oldValue))
+                        cookie.OldValue = oldValue;
+                    if (!string.IsNullOrWhiteSpace(newValue))
+                        cookie.NewValue = newValue;
+                    return cookie;
+                });
         }
 
         public bool TryGetCookie(int id, out ClientCookie clientCookie)

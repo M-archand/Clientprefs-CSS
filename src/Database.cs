@@ -49,13 +49,6 @@ public partial class Clientprefs
 	{
 		try
 		{
-			Cookies.Clear();
-			_cookiesByName.Clear();
-			lock (_clientprefIdLock)
-			{
-				LatestClientprefID = 0;
-			}
-
 			string cookiequery = @$"CREATE TABLE IF NOT EXISTS {Config.TableName}
             (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,6 +112,10 @@ public partial class Clientprefs
 
 				lock (_clientprefIdLock)
 				{
+					Cookies.Clear();
+					_cookiesByName.Clear();
+					LatestClientprefID = 0;
+
 					foreach (var row in rows)
 					{
 						if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;

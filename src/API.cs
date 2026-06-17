@@ -8,22 +8,21 @@ public partial class Clientprefs
 {
     public int AddClientprefCommands(string name, string description, CookieAccess access)
     {
-        int id;
         lock (_clientprefIdLock)
         {
-            id = LatestClientprefID;
+            int id = LatestClientprefID;
             LatestClientprefID++;
+            var cookie = new Cookie()
+            {
+                Id = id,
+                Name = name,
+                Description = description,
+                Access = access
+            };
+            Cookies[cookie.Id] = cookie;
+            _cookiesByName[cookie.Name] = cookie;
+            return id;
         }
-        var cookie = new Cookie()
-        {
-            Id = id,
-            Name = name,
-            Description = description,
-            Access = access
-        };
-        Cookies[cookie.Id] = cookie;
-        _cookiesByName[cookie.Name] = cookie;
-        return id;
     }
 
     public int FindPlayerCookie(string name)

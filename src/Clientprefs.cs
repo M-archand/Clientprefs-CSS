@@ -83,6 +83,9 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         {
             Logger.LogError($"An error occurred while saving player(s) data during unload: {ex.Message}");
         }
+
+        _mySqlDataSource?.Dispose();
+        _mySqlDataSource = null;
     }
 
     [ConsoleCommand("css_cookies", "sm_cookies <name> [value]")]

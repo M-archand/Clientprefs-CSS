@@ -214,48 +214,8 @@ public partial class Clientprefs
 		});
 	}
 
-	public bool CreatePlayerCookie(string name, string description, CookieAccess access)
+	private async Task<bool> UpsertCookieAsync(string name, string description, CookieAccess access)
 	{
-		if (!_databaseLoaded)
-		{
-			Logger.LogError($"CreatePlayerCookie called when Database is not loaded yet.");
-			return false;
-		}
-
-		string query = @$"REPLACE INTO `{Config.TableName}`
-            (name, description, access)
-            VALUES (@name, @description, @access);";
-
-		Task.Run(async () =>
-		{
-			try
-			{
-				using (var connection = CreateConnection())
-				{
-					await connection.OpenAsync();
-
-					await connection.QueryAsync(query, new { name, description, access = (int)access });
-
-					DebugLog($"Created playercookie with name {name}");
-				}
-			}
-			catch (Exception ex)
-			{
-				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while creating a player cookie: {ex.Message}"));
-				return;
-			}
-		});
-		return true;
-	}
-
-	public async Task<bool> CreatePlayerCookieNew(string name, string description, CookieAccess access)
-	{
-		if (!_databaseLoaded)
-		{
-			Logger.LogError($"CreatePlayerCookieNew called when Database is not loaded yet.");
-			return false;
-		}
-
 		string query = @$"REPLACE INTO `{Config.TableName}`
             (name, description, access)
             VALUES (@name, @description, @access);";
@@ -268,15 +228,38 @@ public partial class Clientprefs
 
 				await connection.QueryAsync(query, new { name, description, access = (int)access });
 
-				DebugLog($"Created playercookienew with name {name}");
+				DebugLog($"Created playercookie with name {name}");
 			}
 		}
 		catch (Exception ex)
 		{
-			Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while creating a player cookie new: {ex.Message}"));
+			Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while creating a player cookie: {ex.Message}"));
 			return false;
 		}
 		return true;
+	}
+
+	public bool CreatePlayerCookie(string name, string description, CookieAccess access)
+	{
+		if (!_databaseLoaded)
+		{
+			Logger.LogError($"CreatePlayerCookie called when Database is not loaded yet.");
+			return false;
+		}
+
+		_ = Task.Run(() => UpsertCookieAsync(name, description, access));
+		return true;
+	}
+
+	public async Task<bool> CreatePlayerCookieNew(string name, string description, CookieAccess access)
+	{
+		if (!_databaseLoaded)
+		{
+			Logger.LogError($"CreatePlayerCookieNew called when Database is not loaded yet.");
+			return false;
+		}
+
+		return await UpsertCookieAsync(name, description, access);
 	}
 
 	private void SavePlayerCookies(string steamId64 = "")

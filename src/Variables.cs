@@ -88,6 +88,7 @@ public partial class Clientprefs
     public ConcurrentDictionary<int, Cookie> Cookies = new();
     public ConcurrentDictionary<string, PlayerSetting> PlayerSettings = new();
     public int LatestClientprefID = 0;
+    private readonly object _clientprefIdLock = new();
 
     private ConcurrentDictionary<string, Cookie> _cookiesByName = new();
     private MySqlConnector.MySqlDataSource? _mySqlDataSource;

@@ -51,7 +51,10 @@ public partial class Clientprefs
 		{
 			Cookies.Clear();
 			_cookiesByName.Clear();
-			LatestClientprefID = 0;
+			lock (_clientprefIdLock)
+			{
+				LatestClientprefID = 0;
+			}
 
 			string cookiequery = @$"CREATE TABLE IF NOT EXISTS {Config.TableName}
             (
@@ -114,30 +117,33 @@ public partial class Clientprefs
 
 				var rows = await connection.QueryAsync(cookiequery);
 
-				foreach (var row in rows)
+				lock (_clientprefIdLock)
 				{
-					if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;
-
-					if ((int)row.id > LatestClientprefID)
+					foreach (var row in rows)
 					{
-						LatestClientprefID = (int)row.id;
+						if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;
+
+						if ((int)row.id > LatestClientprefID)
+						{
+							LatestClientprefID = (int)row.id;
+						}
+
+						var cookie = new Cookie
+						{
+							Id = (int)row.id,
+							Name = row.name,
+							Description = row.description,
+							Access = (CookieAccess)row.access,
+						};
+						Cookies[cookie.Id] = cookie;
+						_cookiesByName[cookie.Name] = cookie;
 					}
 
-					var cookie = new Cookie
-					{
-						Id = (int)row.id,
-						Name = row.name,
-						Description = row.description,
-						Access = (CookieAccess)row.access,
-					};
-					Cookies[cookie.Id] = cookie;
-					_cookiesByName[cookie.Name] = cookie;
+					if (LatestClientprefID > 0)
+						LatestClientprefID++;
 				}
 
 				_databaseLoaded = true;
-
-				if (LatestClientprefID > 0)
-					LatestClientprefID++;
 
 				Server.NextWorldUpdate(() =>
 				{

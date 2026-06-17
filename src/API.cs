@@ -8,7 +8,12 @@ public partial class Clientprefs
 {
     public int AddClientprefCommands(string name, string description, CookieAccess access)
     {
-        int id = Interlocked.Increment(ref LatestClientprefID) - 1;
+        int id;
+        lock (_clientprefIdLock)
+        {
+            id = LatestClientprefID;
+            LatestClientprefID++;
+        }
         var cookie = new Cookie()
         {
             Id = id,

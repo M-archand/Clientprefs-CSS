@@ -12,7 +12,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 {
     public override string ModuleName => "Clientprefs";
     public override string ModuleAuthor => "Cruze, Marchand";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.1.1";
 
     private const int DisconnectSaveMaxAttempts = 50;
     private const float DisconnectSaveRetryInterval = 0.1f;

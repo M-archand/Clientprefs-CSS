@@ -12,14 +12,6 @@ public partial class Clientprefs
         public string Name { get; set; } = "";
         public string Description { get; set; } = "";
         public CookieAccess Access { get; set; } = CookieAccess.CookieAccess_Public;
-
-        public Cookie()
-        {
-            Id = -1;
-            Name = "";
-            Description = "";
-            Access = CookieAccess.CookieAccess_Public;
-        }
     }
 
     public class ClientCookie
@@ -27,13 +19,6 @@ public partial class Clientprefs
         public int Id { get; set; } = -1;
         public string? OldValue { get; set; } = null;  // null = no persisted DB row, "" = persisted empty value
         public string NewValue { get; set; } = "";     // save if oldvalue != newvalue
-
-        public ClientCookie()
-        {
-            Id = -1;
-            OldValue = null;
-            NewValue = "";
-        }
     }
 
     public class PlayerSetting
@@ -41,12 +26,6 @@ public partial class Clientprefs
         public bool Loaded { get; set; } = false;
         public bool LoadFailed { get; set; } = false;
         private ConcurrentDictionary<int, ClientCookie> _cookieDict { get; set; } = new();
-
-        public PlayerSetting()
-        {
-            Loaded = false;
-            _cookieDict = new();
-        }
 
         public void LoadCookie(int id, string dbValue)
         {

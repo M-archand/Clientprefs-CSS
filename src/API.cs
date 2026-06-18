@@ -27,13 +27,20 @@ public partial class Clientprefs
         }
     }
 
+    public bool TryFindCookieId(string name, out int id)
+    {
+        if (_cookiesByName.TryGetValue(name, out var cookie))
+        {
+            id = cookie.Id;
+            return true;
+        }
+        id = -1;
+        return false;
+    }
+
     public int FindPlayerCookie(string name)
     {
-        if (ClientPrefExists(name))
-        {
-            return GetClientPrefByName(name);
-        }
-        return -1;
+        return TryFindCookieId(name, out var id) ? id : -1;
     }
 
     public bool TryGetCookieAccess(int cookieId, out CookieAccess access)
@@ -61,16 +68,6 @@ public partial class Clientprefs
     public int ClientPrefCount()
     {
         return Cookies.Count;
-    }
-
-    public bool ClientPrefExists(string name)
-    {
-        return _cookiesByName.ContainsKey(name);
-    }
-
-    public int GetClientPrefByName(string name)
-    {
-        return _cookiesByName[name].Id;
     }
 
     public void LogWarning(string message)
@@ -104,9 +101,9 @@ public class ClientprefsApi : IClientprefsApi
 
     public async Task<int> RegPlayerCookieAsync(string name, string description, CookieAccess access = CookieAccess.CookieAccess_Public)
     {
-        if (_plugin.ClientPrefExists(name))
+        if (_plugin.TryFindCookieId(name, out var existingId))
         {
-            return _plugin.GetClientPrefByName(name);
+            return existingId;
         }
 
         if (name.Length > IClientprefsApi.COOKIE_MAX_NAME_LENGTH)
@@ -130,11 +127,7 @@ public class ClientprefsApi : IClientprefsApi
 
     public int FindPlayerCookie(string name)
     {
-        if (_plugin.ClientPrefExists(name))
-        {
-            return _plugin.GetClientPrefByName(name);
-        }
-        return -1;
+        return _plugin.TryFindCookieId(name, out var id) ? id : -1;
     }
 
     public string GetPlayerCookie(CCSPlayerController player, int cookieId)

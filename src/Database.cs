@@ -157,16 +157,10 @@ public partial class Clientprefs
 				{
 					Cookies.Clear();
 					_cookiesByName.Clear();
-					LatestClientprefID = 0;
 
 					foreach (var row in rows)
 					{
 						if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;
-
-						if ((int)row.id > LatestClientprefID)
-						{
-							LatestClientprefID = (int)row.id;
-						}
 
 						var cookie = new Cookie
 						{
@@ -178,9 +172,6 @@ public partial class Clientprefs
 						Cookies[cookie.Id] = cookie;
 						_cookiesByName[cookie.Name] = cookie;
 					}
-
-					if (LatestClientprefID > 0)
-						LatestClientprefID++;
 				}
 
 				_databaseLoaded = true;

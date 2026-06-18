@@ -19,10 +19,6 @@ public partial class Clientprefs
             };
             Cookies[cookie.Id] = cookie;
             _cookiesByName[cookie.Name] = cookie;
-            if (id >= LatestClientprefID)
-            {
-                LatestClientprefID = id + 1;
-            }
             return id;
         }
     }

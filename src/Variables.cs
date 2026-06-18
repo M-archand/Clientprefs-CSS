@@ -81,7 +81,6 @@ public partial class Clientprefs
     public required ClientprefsApi ClientprefsApi { get; set; }
     public ConcurrentDictionary<int, Cookie> Cookies = new();
     public ConcurrentDictionary<string, PlayerSetting> PlayerSettings = new();
-    public int LatestClientprefID = 0;
     private readonly object _clientprefIdLock = new();
 
     private ConcurrentDictionary<string, Cookie> _cookiesByName = new();

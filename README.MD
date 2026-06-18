@@ -123,6 +123,14 @@ Set `DatabaseType` to `"mysql"` and fill in the connection fields to use MySQL; 
 - [ ] css_settings (cookie settings menu)
 
 ## Changelog
+- v1.1.1
+    - fix: keep player cookies in memory until the database save commits, so a failed save no longer drops pending changes.
+    - fix: cap the unload cookie flush at 30s and print start/end/timeout progress to the console.
+    - fix: gate database exception details behind the Debug flag and scrub the password from any log output.
+    - refactor: hide the unimplemented cookie settings menu API so consumers can't call the crashing stubs.
+    - refactor: consolidate duplicate FindPlayerCookie logic into a single TryFindCookieId.
+    - chore: remove dead code (unused pawn-validation helpers, write-only LatestClientprefID field, redundant constructors).
+
 - v1.1.0
     - refactor: rebuild for .NET 10 / CSS 369.
     - feat: async cookie registration via RegPlayerCookieAsync.

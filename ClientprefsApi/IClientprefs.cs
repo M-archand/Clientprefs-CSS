@@ -124,6 +124,8 @@ public interface IClientprefsApi
     /// <param name="handler">Handler to check if player cookies are loaded.</param>
     public bool ArePlayerCookiesCached(CCSPlayerController player);
 
+    /*
+    // Cookie settings menu API - not yet implemented.
     /// <summary>
     /// Add a new prefab item to the client cookie settings menu.
     /// Note: This handles everything automatically and does not require a callback
@@ -143,4 +145,5 @@ public interface IClientprefsApi
     /// </summary>
     /// <param name="handler">Handler to display cookie menu to player.</param>
     public void ShowCookieMenu(CCSPlayerController player);
+    */
 }

@@ -16,6 +16,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
     private const int DisconnectSaveMaxAttempts = 50;
     private const float DisconnectSaveRetryInterval = 0.1f;
+    private const int UnloadFlushTimeoutSeconds = 30;
 
     public void OnConfigParsed(ClientprefsConfig config)
     {
@@ -77,11 +78,17 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
         try
         {
-            SavePlayerCookies().GetAwaiter().GetResult();
+            Console.WriteLine($"[Clientprefs] Flushing player cookies to database before unload (timeout {UnloadFlushTimeoutSeconds}s)...");
+            SavePlayerCookies().WaitAsync(TimeSpan.FromSeconds(UnloadFlushTimeoutSeconds)).GetAwaiter().GetResult();
+            Console.WriteLine("[Clientprefs] Player cookie flush complete, unloading.");
+        }
+        catch (TimeoutException)
+        {
+            Console.WriteLine($"[Clientprefs] Player cookie flush did not finish within {UnloadFlushTimeoutSeconds}s; unloading anyway. Some changes may not have been saved.");
         }
         catch (Exception ex)
         {
-            LogDbError("An error occurred while saving player(s) data during unload", ex);
+            Console.WriteLine($"[Clientprefs] Player cookie flush failed during unload: {ScrubSecrets(ex.Message)}");
         }
 
         _mySqlDataSource?.Dispose();

@@ -14,6 +14,9 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     public override string ModuleAuthor => "Cruze, Marchand";
     public override string ModuleVersion => "1.1.0";
 
+    private const int DisconnectSaveMaxAttempts = 50;
+    private const float DisconnectSaveRetryInterval = 0.1f;
+
     public void OnConfigParsed(ClientprefsConfig config)
     {
         Config = config;
@@ -204,14 +207,14 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         }
 
         var steamId = player.SteamID.ToString();
-        SaveDisconnectedPlayerCookies(steamId, 50);
+        SaveDisconnectedPlayerCookies(steamId, DisconnectSaveMaxAttempts);
         return HookResult.Continue;
     }
 
     private void SaveDisconnectedPlayerCookies(string steamId, int attemptsLeft)
     {
         CounterStrikeSharp.API.Modules.Timers.Timer? timer = null;
-        timer = AddTimer(0.1f, () =>
+        timer = AddTimer(DisconnectSaveRetryInterval, () =>
         {
             _saveTimers.Remove(timer!);
 

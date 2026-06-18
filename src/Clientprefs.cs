@@ -3,9 +3,7 @@ using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
-
 using Clientprefs.API;
-using Microsoft.Extensions.Logging;
 
 namespace Clientprefs;
 
@@ -13,7 +11,6 @@ namespace Clientprefs;
 public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 {
     public override string ModuleName => "Clientprefs";
-    public override string ModuleDescription => "Clientprefs plugin for CounterStrikeSharp";
     public override string ModuleAuthor => "Cruze, Marchand";
     public override string ModuleVersion => "1.1.0";
 
@@ -81,7 +78,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         }
         catch (Exception ex)
         {
-            Logger.LogError($"An error occurred while saving player(s) data during unload: {ex.Message}");
+            LogDbError("An error occurred while saving player(s) data during unload", ex);
         }
 
         _mySqlDataSource?.Dispose();

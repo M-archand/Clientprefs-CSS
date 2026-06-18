@@ -27,6 +27,27 @@ public partial class Clientprefs
 			&& Config.DatabaseUsername != "" && Config.DatabasePassword != "";
 	}
 
+	private string ScrubSecrets(string message)
+	{
+		if (!string.IsNullOrEmpty(Config.DatabasePassword))
+		{
+			message = message.Replace(Config.DatabasePassword, "***");
+		}
+		return message;
+	}
+
+	private void LogDbError(string context, Exception ex)
+	{
+		if (Config.Debug)
+		{
+			Logger.LogError($"{context}: {ScrubSecrets(ex.Message)}");
+		}
+		else
+		{
+			Logger.LogError($"{context}. Enable Debug in the config for details.");
+		}
+	}
+
 	// Retries transient DB connect failures with backoff so OnDatabaseLoaded still fires; misconfiguration is not retried.
 	private async Task ConnectDatabaseTableWithRetry()
 	{
@@ -201,7 +222,7 @@ public partial class Clientprefs
 		}
 		catch (Exception ex)
 		{
-			Server.NextWorldUpdate(() => Logger.LogError($"Unable to connect to database: {ex.Message}"));
+			Server.NextWorldUpdate(() => LogDbError("Unable to connect to database", ex));
 			return false;
 		}
 	}
@@ -273,7 +294,7 @@ public partial class Clientprefs
 						pref.LoadFailed = true;
 					}
 				}
-				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while fetching player preferences: {ex.Message}"));
+				Server.NextWorldUpdate(() => LogDbError("An error occurred while fetching player preferences", ex));
 			}
 		});
 	}
@@ -329,7 +350,7 @@ public partial class Clientprefs
 				{
 					pref.LoadFailed = true;
 				}
-				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while fetching player preferences: {ex.Message}"));
+				Server.NextWorldUpdate(() => LogDbError("An error occurred while fetching player preferences", ex));
 			}
 		});
 	}
@@ -362,7 +383,7 @@ public partial class Clientprefs
 		}
 		catch (Exception ex)
 		{
-			Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while creating a player cookie: {ex.Message}"));
+			Server.NextWorldUpdate(() => LogDbError("An error occurred while creating a player cookie", ex));
 			return -1;
 		}
 	}
@@ -485,7 +506,7 @@ public partial class Clientprefs
 			}
 			catch (Exception ex)
 			{
-				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while saving player(s) data; entries kept for retry: {ex.Message}"));
+				Server.NextWorldUpdate(() => LogDbError("An error occurred while saving player(s) data; entries kept for retry", ex));
 			}
 		});
 	}

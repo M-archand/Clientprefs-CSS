@@ -17,29 +17,3 @@ internal static class CCSPlayerControllerEx
         return true;
     }
 }
-
-internal static class CHandleCCSPlayerPawnEx
-{
-    internal static bool IsValidPawn(this CHandle<CCSPlayerPawn>? pawn)
-    {
-        return pawn != null && pawn.IsValid && pawn != IntPtr.Zero && pawn.Value != null && pawn.Value.IsValid && pawn.Value.WeaponServices != null && pawn.Value.WeaponServices.MyWeapons != null && pawn.Value.ItemServices != null;
-    }
-
-    internal static bool IsValidPawnAlive(this CHandle<CCSPlayerPawn>? pawn)
-    {
-        return IsValidPawn(pawn) && pawn!.Value!.LifeState == (byte)LifeState_t.LIFE_ALIVE && pawn.Value.Health > 0;
-    }
-}
-
-internal static class CCSPlayerPawnEx
-{
-    internal static bool IsValidPawn(this CCSPlayerPawn? pawn)
-    {
-        return pawn != null && pawn.IsValid && pawn.WeaponServices != null && pawn.WeaponServices.MyWeapons != null && pawn.ItemServices != null;
-    }
-
-    internal static bool IsValidPawnAlive(this CCSPlayerPawn? pawn)
-    {
-        return IsValidPawn(pawn) && pawn!.LifeState == (byte)LifeState_t.LIFE_ALIVE && pawn!.Health > 0;
-    }
-}

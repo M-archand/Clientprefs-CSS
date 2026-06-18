@@ -390,18 +390,12 @@ public partial class Clientprefs
 
 		if (!string.IsNullOrEmpty(steamId64))
 		{
-			if (!PlayerSettings.ContainsKey(steamId64))
+			if (!PlayerSettings.TryGetValue(steamId64, out var single) || !single.Loaded)
 			{
 				return Task.CompletedTask;
 			}
 
-			if (!PlayerSettings[steamId64].Loaded)
-			{
-				return Task.CompletedTask;
-			}
-
-			aPlayers.Add(steamId64, [.. PlayerSettings[steamId64].Cookies]);
-			PlayerSettings.TryRemove(steamId64, out _);
+			aPlayers.Add(steamId64, [.. single.Cookies]);
 		}
 		else
 		{
@@ -416,7 +410,6 @@ public partial class Clientprefs
 				}
 
 				aPlayers.Add(steamId, [.. value.Cookies]);
-				PlayerSettings.TryRemove(steamId, out _);
 			}
 		}
 
@@ -484,11 +477,15 @@ public partial class Clientprefs
 						DebugLog($"Saved cookies");
 					}
 				}
+
+				foreach (var steamId in aPlayers.Keys)
+				{
+					PlayerSettings.TryRemove(steamId, out _);
+				}
 			}
 			catch (Exception ex)
 			{
-				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while saving player(s) data: {ex.Message}"));
-				throw;
+				Server.NextWorldUpdate(() => Logger.LogError($"An error occurred while saving player(s) data; entries kept for retry: {ex.Message}"));
 			}
 		});
 	}

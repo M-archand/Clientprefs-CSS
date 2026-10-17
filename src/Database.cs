@@ -545,6 +545,26 @@ public partial class Clientprefs
 		return writes;
 	}
 
+	private const int SaveBatchSize = 200;
+
+	private string BuildUpsertStatement(int rows)
+	{
+		var values = string.Join(",", Enumerable.Range(0, rows).Select(i => $"(@s{i}, @c{i}, @v{i}, @timestamp)"));
+
+		return IsMySQL()
+			? @$"INSERT INTO `{Config.TableNamePlayerData}` (steamid, cookie_id, value, timestamp) VALUES {values}
+            ON DUPLICATE KEY UPDATE value = VALUES(value), timestamp = VALUES(timestamp);"
+			: @$"INSERT INTO `{Config.TableNamePlayerData}` (steamid, cookie_id, value, timestamp) VALUES {values}
+            ON CONFLICT(steamid, cookie_id) DO UPDATE SET value = excluded.value, timestamp = excluded.timestamp;";
+	}
+
+	private string BuildDeleteStatement(int rows)
+	{
+		var keys = string.Join(" OR ", Enumerable.Range(0, rows).Select(i => $"(steamid = @s{i} AND cookie_id = @c{i})"));
+
+		return @$"DELETE FROM `{Config.TableNamePlayerData}` WHERE {keys};";
+	}
+
 	private Task SavePlayerCookies(string steamId64 = "")
 	{
 		if (!IsDatabaseReady(nameof(SavePlayerCookies))) return Task.CompletedTask;
@@ -595,51 +615,58 @@ public partial class Clientprefs
 		{
 			try
 			{
+				var upserts = new List<(string SteamId, int CookieId, string Value)>();
+				var deletes = new List<(string SteamId, int CookieId)>();
+
+				foreach (var pair in aPlayers)
+				{
+					foreach (var write in pair.Value)
+					{
+						if (write.Value == null)
+						{
+							deletes.Add((pair.Key, write.Id));
+						}
+						else
+						{
+							upserts.Add((pair.Key, write.Id, write.Value));
+						}
+					}
+				}
+
 				using (var connection = CreateConnection())
 				{
 					await connection.OpenAsync();
 
-					string query;
-
 					using (var transaction = await connection.BeginTransactionAsync())
 					{
-						foreach (var pair in aPlayers)
+						foreach (var chunk in upserts.Chunk(SaveBatchSize))
 						{
-							var steamId = pair.Key;
-							var writes = pair.Value;
-							var deleteIds = new List<int>();
-
-							foreach (var write in writes)
+							var parameters = new DynamicParameters();
+							parameters.Add("timestamp", time);
+							for (int i = 0; i < chunk.Length; i++)
 							{
-								if (write.Value == null)
-								{
-									deleteIds.Add(write.Id);
-									continue;
-								}
-
-								query = @$"REPLACE INTO `{Config.TableNamePlayerData}`
-                                (steamid, cookie_id, value, timestamp)
-                                VALUES (@steam, @id, @value, @timestamp);";
-
-								await connection.ExecuteAsync(query,
-								new { steam = steamId, id = write.Id, value = write.Value, timestamp = time },
-								transaction: transaction);
-								DebugLog($"Saving cookies {write.Id} for {steamId}");
+								parameters.Add($"s{i}", chunk[i].SteamId);
+								parameters.Add($"c{i}", chunk[i].CookieId);
+								parameters.Add($"v{i}", chunk[i].Value);
 							}
 
-							if (deleteIds.Count > 0)
-							{
-								query = @$"DELETE FROM `{Config.TableNamePlayerData}`
-								WHERE steamid = @steam AND cookie_id IN @ids;";
-
-								await connection.ExecuteAsync(query,
-								new { steam = steamId, ids = deleteIds },
-								transaction: transaction);
-								DebugLog($"Deleting {deleteIds.Count} cookies for {steamId}");
-							}
+							await connection.ExecuteAsync(BuildUpsertStatement(chunk.Length), parameters, transaction: transaction);
 						}
+
+						foreach (var chunk in deletes.Chunk(SaveBatchSize))
+						{
+							var parameters = new DynamicParameters();
+							for (int i = 0; i < chunk.Length; i++)
+							{
+								parameters.Add($"s{i}", chunk[i].SteamId);
+								parameters.Add($"c{i}", chunk[i].CookieId);
+							}
+
+							await connection.ExecuteAsync(BuildDeleteStatement(chunk.Length), parameters, transaction: transaction);
+						}
+
 						await transaction.CommitAsync();
-						DebugLog($"Saved cookies");
+						DebugLog($"Saved {upserts.Count} and deleted {deletes.Count} cookie rows for {aPlayers.Count} player(s)");
 					}
 				}
 

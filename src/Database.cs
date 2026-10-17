@@ -1,11 +1,10 @@
 using CounterStrikeSharp.API;
-using CounterStrikeSharp.API.Core;
-
 using Dapper;
-using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 
 
 using Clientprefs.API;
@@ -36,15 +35,42 @@ public partial class Clientprefs
 		return message;
 	}
 
+	private static bool IsLoadFailure(Exception ex)
+	{
+		for (Exception? e = ex; e != null; e = e.InnerException)
+		{
+			if (e is FileNotFoundException or FileLoadException or DllNotFoundException
+				or BadImageFormatException or TypeInitializationException)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static string DescribeExceptionChain(Exception ex)
+	{
+		var parts = new List<string>();
+		for (Exception? e = ex; e != null; e = e.InnerException)
+		{
+			parts.Add($"{e.GetType().Name}: {e.Message}");
+		}
+		return string.Join(" <- ", parts);
+	}
+
 	private void LogDbError(string context, Exception ex)
 	{
-		if (Config.Debug)
+		if (IsLoadFailure(ex))
+		{
+			Logger.LogError($"{context}: {ScrubSecrets(DescribeExceptionChain(ex))}. The plugin install is missing a dependency; reinstall the full release package (including the runtimes folder).");
+		}
+		else if (Config.Debug)
 		{
 			Logger.LogError($"{context}: {ScrubSecrets(ex.Message)}");
 		}
 		else
 		{
-			Logger.LogError($"{context}. Enable Debug in the config for details.");
+			Logger.LogError($"{context} ({ex.GetType().Name}). Enable Debug in the config for details.");
 		}
 	}
 
@@ -97,10 +123,18 @@ public partial class Clientprefs
 
 	private DbConnection CreateConnection()
 	{
-		if (IsMySQL())
-		{
-			return _mySqlDataSource!.CreateConnection();
-		}
+		return IsMySQL() ? CreateMySqlConnection() : CreateSqliteConnection();
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private DbConnection CreateMySqlConnection()
+	{
+		return _mySqlDataSource!.CreateConnection();
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private DbConnection CreateSqliteConnection()
+	{
 		return new SqliteConnection($"Data Source={Path.Join(ModuleDirectory, "clientprefs.db")}");
 	}
 

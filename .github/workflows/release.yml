@@ -69,9 +69,15 @@ jobs:
 
           # Plugin assemblies + runtime deps (pdb excluded; ClientprefsApi.dll
           # already pruned from plugin output by the csproj ExcludeStoreApiFiles target).
-          # DB runtime deps (Dapper, MySqlConnector, SQLitePCLRaw) ship with the plugin.
+          # DB runtime deps (Dapper, MySqlConnector, Microsoft.Data.Sqlite, SQLitePCLRaw)
+          # ship with the plugin; CounterStrikeSharp does not provide them.
           cp "${PLUGIN_OUT}"/*.dll "${PLUGIN_DIR}/"
           cp "${PLUGIN_OUT}/Clientprefs.deps.json" "${PLUGIN_DIR}/"
+
+          # Native SQLite library (runtimes/<rid>/native/). The plugin loader resolves it
+          # from Clientprefs.deps.json relative to the plugin folder, so the directory
+          # layout must be preserved. The csproj keeps only linux-x64 and win-x64.
+          cp -r "${PLUGIN_OUT}/runtimes" "${PLUGIN_DIR}/"
 
           # Shared API assembly
           cp "${SHARED_OUT}/ClientprefsApi.dll" "${SHARED_DIR}/"
@@ -83,6 +89,56 @@ jobs:
           zip -r "../${FOLDER}.zip" "${FOLDER}"
           cd ..
           echo "Created ${FOLDER}.zip"
+
+      - name: Verify release package contents
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          FOLDER="Clientprefs-v${VERSION}"
+          ZIP="${FOLDER}.zip"
+          PLUGIN_PATH="${FOLDER}/addons/counterstrikesharp/plugins/Clientprefs"
+          SHARED_PATH="${FOLDER}/addons/counterstrikesharp/shared/ClientprefsApi"
+
+          LISTING=$(unzip -Z1 "${ZIP}")
+          FAILED=0
+
+          # Every file the plugin needs at runtime on a clean CounterStrikeSharp install.
+          # If a NuGet bump or csproj change drops one of these, the release must fail here
+          # instead of on a user's server (CONCERNS C-01: SQLite driver stripped from the zip).
+          REQUIRED=(
+            "${PLUGIN_PATH}/Clientprefs.dll"
+            "${PLUGIN_PATH}/Clientprefs.deps.json"
+            "${PLUGIN_PATH}/Dapper.dll"
+            "${PLUGIN_PATH}/MySqlConnector.dll"
+            "${PLUGIN_PATH}/Microsoft.Data.Sqlite.dll"
+            "${PLUGIN_PATH}/SQLitePCLRaw.batteries_v2.dll"
+            "${PLUGIN_PATH}/SQLitePCLRaw.core.dll"
+            "${PLUGIN_PATH}/SQLitePCLRaw.provider.e_sqlite3.dll"
+            "${PLUGIN_PATH}/runtimes/linux-x64/native/libe_sqlite3.so"
+            "${PLUGIN_PATH}/runtimes/win-x64/native/e_sqlite3.dll"
+            "${PLUGIN_PATH}/lang/en.json"
+            "${SHARED_PATH}/ClientprefsApi.dll"
+          )
+          for f in "${REQUIRED[@]}"; do
+            if ! grep -qxF "$f" <<< "$LISTING"; then
+              echo "::error::Missing from release package: $f"
+              FAILED=1
+            fi
+          done
+
+          # Host-provided assemblies must NOT ship; duplicates cause type-identity clashes.
+          FORBIDDEN=$(grep -E "^${PLUGIN_PATH}/(Microsoft\.Extensions\.|Serilog|McMaster\.|Tomlyn|Scrutor|FastGenericNew|CounterStrikeSharp\.API|ClientprefsApi)" <<< "$LISTING" || true)
+          if [ -n "$FORBIDDEN" ]; then
+            echo "::error::Host-provided assemblies leaked into the plugin folder:"
+            echo "$FORBIDDEN"
+            FAILED=1
+          fi
+
+          if [ "$FAILED" -ne 0 ]; then
+            echo "Full package listing:"
+            echo "$LISTING"
+            exit 1
+          fi
+          echo "Release package contents verified."
 
       - name: Prepare release artifact
         id: zip

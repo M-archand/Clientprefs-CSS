@@ -21,9 +21,9 @@
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 
-    <PackageReference Include="MySqlConnector" Version="2.6.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
-    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="MySqlConnector" Version="2.6.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageReference Include="Dapper" Version="2.1.89" />
     <ProjectReference Include="ClientprefsApi\ClientprefsApi.csproj" />
 
   </ItemGroup>
@@ -32,21 +32,27 @@
     <None Include="src\lang\**\*.*" CopyToOutputDirectory="PreserveNewest" Link="lang\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
-    <Target Name="ExcludeStoreApiFiles" AfterTargets="Build">
+  <Target Name="ExcludeStoreApiFiles" AfterTargets="Build">
+    <PropertyGroup>
+      <_RuntimesDir>$([MSBuild]::NormalizeDirectory('$(OutputPath)', 'runtimes'))</_RuntimesDir>
+      <_RuntimeRidDirs Condition="Exists('$(_RuntimesDir)')">$([System.IO.Directory]::GetDirectories('$(_RuntimesDir)'))</_RuntimeRidDirs>
+    </PropertyGroup>
     <ItemGroup>
-      <MicrosoftOutputFiles Include="$(OutputPath)Microsoft*" />
-      <SerilogOutputFiles Include="$(OutputPath)Serilog*" />
+      <HostProvidedOutputFiles Include="$(OutputPath)Microsoft.Extensions.*" />
+      <HostProvidedOutputFiles Include="$(OutputPath)Microsoft.DotNet.PlatformAbstractions.dll" />
+      <HostProvidedOutputFiles Include="$(OutputPath)Serilog*" />
+      <HostProvidedOutputFiles Include="$(OutputPath)Tomlyn.dll" />
+      <HostProvidedOutputFiles Include="$(OutputPath)Scrutor.dll" />
+      <HostProvidedOutputFiles Include="$(OutputPath)FastGenericNew.dll" />
+      <HostProvidedOutputFiles Include="$(OutputPath)System.Diagnostics.EventLog.dll" />
+      <HostProvidedOutputFiles Include="$(OutputPath)McMaster.NETCore.Plugins.dll" />
+      <HostProvidedOutputFiles Include="$(OutputPath)ClientprefsApi.dll" />
+      <HostProvidedOutputFiles Include="$(OutputPath)ClientprefsApi.pdb" />
+      <_RuntimeRidDirs Include="$(_RuntimeRidDirs)" />
+      <_RuntimeRidDirsToRemove Include="@(_RuntimeRidDirs)" Condition="'%(Filename)%(Extension)' != 'linux-x64' And '%(Filename)%(Extension)' != 'win-x64'" />
     </ItemGroup>
-    <Delete Files="@(MicrosoftOutputFiles)" />
-    <Delete Files="@(SerilogOutputFiles)" />
-    <Delete Files="$(OutputPath)Tomlyn.dll" />
-    <Delete Files="$(OutputPath)Scrutor.dll" />
-		<Delete Files="$(OutputPath)ClientprefsApi.dll" />
-    <Delete Files="$(OutputPath)ClientprefsApi.pdb" />
-    <Delete Files="$(OutputPath)FastGenericNew.dll" />
-    <Delete Files="$(OutputPath)System.Diagnostics.EventLog.dll" />
-    <Delete Files="$(OutputPath)McMaster.NETCore.Plugins.dll" />
-    <RemoveDir Directories="$(OutputPath)runtimes" />
+    <Delete Files="@(HostProvidedOutputFiles)" />
+    <RemoveDir Directories="@(_RuntimeRidDirsToRemove)" />
   </Target>
 
 </Project>

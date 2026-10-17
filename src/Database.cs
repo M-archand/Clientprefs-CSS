@@ -361,6 +361,13 @@ public partial class Clientprefs
 	private void EvictIfDisconnected(string steamId)
 	{
 		if (_connectedSteamIds.Contains(steamId)) return;
+		if (!PlayerSettings.TryGetValue(steamId, out var setting)) return;
+
+		if (setting.Loaded && CollectPendingWrites(setting).Count > 0)
+		{
+			SavePlayerCookies(steamId);
+			return;
+		}
 
 		PlayerSettings.TryRemove(steamId, out _);
 	}

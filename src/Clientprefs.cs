@@ -241,7 +241,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
             return HookResult.Continue;
         }
 
-        SaveDisconnectedPlayerCookies(steamId);
+        Server.NextWorldUpdate(() => SaveDisconnectedPlayerCookies(steamId));
         return HookResult.Continue;
     }
 

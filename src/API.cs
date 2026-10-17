@@ -193,22 +193,4 @@ public class ClientprefsApi : IClientprefsApi
 
         return _plugin.PlayerSettings.TryGetValue(steamId, out var pref) && pref.Loaded;
     }
-
-    /*
-    // Cookie settings menu API - not yet implemented.
-    public void SetCookiePrefabMenu(int cookieId, CookieMenu type, string display, Action<CCSPlayerController, CookieMenuAction, string> cookieMenuHandler)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void SetCookieMenuItem(Action<CCSPlayerController, CookieMenuAction, string> cookieMenuHandler, string display)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void ShowCookieMenu(CCSPlayerController player)
-    {
-        throw new NotImplementedException();
-    }
-    */
 }

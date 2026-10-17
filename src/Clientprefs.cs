@@ -170,20 +170,6 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie Changed Value", name, value]);
     }
 
-    /*
-    [ConsoleCommand("css_settings", "Settings command for clientprefs")]
-	public void OnSettingsCommand(CCSPlayerController? player, CommandInfo command)
-	{
-        if (player == null || !player.IsValid)
-        {
-            command.ReplyToCommand(Localizer["Prefix"] + Localizer["No Console"]);
-            return;
-        }
-        command.ReplyToCommand($"{Localizer["Prefix"]} Not yet implemented");
-        // ClientprefsApi.ShowCookieMenu(player);
-    }
-    */
-
     [GameEventHandler]
     public HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo _)
     {

@@ -3,8 +3,6 @@
 
 	"Cookie Usage": "Usage: sm_cookies <name> [value]",
 
-	"Cookie List": "CounterStrikeSharp Cookie List",
-
 	"Printing Cookie List": "Printing cookie list to console",
 
 	"Cookie not Found": "Could not find cookie \"{0}\"",
@@ -17,9 +15,5 @@
 
 	"Cookie Value Too Long": "Value for cookie \"{0}\" is too long (max {1} characters)",
 
-	"No Console": "Cannot display settings menu to console",
-
-	"Choose Option": "Choose Option",
-
-	"Client Settings": "Client Settings"
+	"No Console": "Cannot display settings menu to console"
 }

@@ -23,47 +23,6 @@ public enum CookieAccess
 };
 
 /// <summary>
-/// Cookie Prefab menu types
-/// </summary>
-public enum CookieMenu
-{
-    /// <summary>
-    /// Yes/No menu with "yes"/"no" results saved into the cookie
-    /// </summary>
-    CookieMenu_YesNo,
-    /// <summary>
-    /// Yes/No menu with 1/0 saved into the cookie
-    /// </summary>
-    CookieMenu_YesNo_Int,
-    /// <summary>
-    /// On/Off menu with "on"/"off" results saved into the cookie
-    /// </summary>
-    CookieMenu_OnOff,
-    /// <summary>
-    /// On/Off menu with 1/0 saved into the cookie
-    /// </summary>
-    CookieMenu_OnOff_Int
-};
-
-/// <summary>
-/// Cookie Prefab Menu Actions
-/// </summary>
-public enum CookieMenuAction
-{
-    /// <summary>
-    /// An option is being drawn for a menu.
-    /// INPUT : PlayerController.
-    /// </summary>
-    CookieMenuAction_DisplayOption = 0,
-
-    /// <summary>
-    /// A menu option has been selected.
-    /// INPUT : PlayerController.
-    /// </summary>
-    CookieMenuAction_SelectOption = 1
-};
-
-/// <summary>
 /// API for Clienprefs.
 /// </summary>
 public interface IClientprefsApi
@@ -123,27 +82,4 @@ public interface IClientprefsApi
     /// </summary>
     /// <param name="handler">Handler to check if player cookies are loaded.</param>
     public bool ArePlayerCookiesCached(CCSPlayerController player);
-
-    /*
-    // Cookie settings menu API - not yet implemented.
-    /// <summary>
-    /// Add a new prefab item to the client cookie settings menu.
-    /// Note: This handles everything automatically and does not require a callback
-    /// </summary>
-    /// <param name="handler">Handler to set prefab menu.</param>
-    public void SetCookiePrefabMenu(int cookieId, CookieMenu type, string display, Action<CCSPlayerController, CookieMenuAction, string> cookieMenuHandler);
-
-    /// <summary>
-    /// Adds a new item to the client cookie settings menu.
-    /// Note: This only adds the top level menu item. You need to handle any submenus from the callback.
-    /// </summary>
-    /// <param name="handler">Handler to set cookie menu item.</param>
-    public void SetCookieMenuItem(Action<CCSPlayerController, CookieMenuAction, string> cookieMenuHandler, string display);
-
-    /// <summary>
-    /// Displays the settings menu to a player.
-    /// </summary>
-    /// <param name="handler">Handler to display cookie menu to player.</param>
-    public void ShowCookieMenu(CCSPlayerController player);
-    */
 }

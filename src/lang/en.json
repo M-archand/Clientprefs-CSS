@@ -7,6 +7,8 @@
 
 	"Cookie not Found": "Could not find cookie \"{0}\"",
 
+	"Cookies Not Loaded": "Your cookies are still loading, try again in a moment",
+
 	"Cookie Value": "{0} ({1})'s value is {2}",
 
 	"Protected Cookie": "Cannot change the value of protected cookie \"{0}\"",

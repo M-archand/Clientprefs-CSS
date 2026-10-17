@@ -141,16 +141,21 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
         var steamId = player.SteamID.ToString();
 
-        if (!PlayerSettings.TryGetValue(steamId, out var settings) || !settings.TryGetCookie(cookieId, out var cookie))
+        if (!PlayerSettings.TryGetValue(steamId, out var settings) || !settings.Loaded)
         {
-            command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie not Found", name]);
+            command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookies Not Loaded"]);
             return;
         }
 
-        string value = cookie.NewValue;
+        string value = settings.TryGetCookie(cookieId, out var cookie) ? cookie.NewValue : "";
         string description = Cookies[cookieId].Description;
 
         command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie Value", name, description, value]);
+
+        if (command.ArgCount < 3)
+        {
+            return;
+        }
 
         if (access == CookieAccess.CookieAccess_Protected)
         {
@@ -166,7 +171,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
             return;
         }
 
-        cookie.NewValue = value;
+        settings.SetCookie(cookieId, value);
         command.ReplyToCommand(Localizer["Prefix"] + Localizer["Cookie Changed Value", name, value]);
     }
 

@@ -5,6 +5,8 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
+using System.Text.RegularExpressions;
 using Clientprefs.API;
 
 namespace Clientprefs;
@@ -18,10 +20,38 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
     private const int UnloadFlushTimeoutSeconds = 30;
 
+    private static readonly Regex TableNamePattern = new("^[A-Za-z0-9_]{1,64}$", RegexOptions.Compiled);
+
     public void OnConfigParsed(ClientprefsConfig config)
     {
         Config = config;
         _isMySQL = Config.DatabaseType.Equals("mysql", StringComparison.OrdinalIgnoreCase);
+        _configError = ValidateConfig(config);
+    }
+
+    private string? ValidateConfig(ClientprefsConfig config)
+    {
+        if (!TableNamePattern.IsMatch(config.TableName))
+        {
+            return $"TableName \"{config.TableName}\" is invalid; use 1-64 letters, digits or underscores.";
+        }
+
+        if (!TableNamePattern.IsMatch(config.TableNamePlayerData))
+        {
+            return $"TableNamePlayerData \"{config.TableNamePlayerData}\" is invalid; use 1-64 letters, digits or underscores.";
+        }
+
+        if (string.Equals(config.TableName, config.TableNamePlayerData, StringComparison.OrdinalIgnoreCase))
+        {
+            return "TableName and TableNamePlayerData must be different tables.";
+        }
+
+        if (_isMySQL && !Enum.TryParse(config.DatabaseSslmode, true, out _mySqlSslMode))
+        {
+            return $"DatabaseSslmode \"{config.DatabaseSslmode}\" is invalid; use one of: {string.Join(", ", Enum.GetNames<MySqlSslMode>())}.";
+        }
+
+        return null;
     }
 
     public override void Load(bool hotReload)

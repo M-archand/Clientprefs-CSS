@@ -89,5 +89,7 @@ public partial class Clientprefs
     private readonly List<Task> _pendingSaves = new();
     private MySqlConnector.MySqlDataSource? _mySqlDataSource;
     private bool _databaseLoaded = false, _isMySQL = false;
+    private string? _configError;
+    private MySqlConnector.MySqlSslMode _mySqlSslMode;
     private bool _allPluginsLoaded = false, _databaseLoadedEventFired = false;
 }

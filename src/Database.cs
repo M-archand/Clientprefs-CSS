@@ -78,6 +78,12 @@ public partial class Clientprefs
 	// Retries transient DB connect failures with backoff so OnDatabaseLoaded still fires; misconfiguration is not retried.
 	private async Task ConnectDatabaseTableWithRetry()
 	{
+		if (_configError != null)
+		{
+			Logger.LogError($"Invalid configuration: {_configError} Clientprefs is disabled; dependent plugins will not receive OnDatabaseLoaded.");
+			return;
+		}
+
 		if (!IsDatabaseConfigComplete())
 		{
 			Logger.LogError("Database connection information is missing. Please fill in the information in the config file.");
@@ -113,7 +119,7 @@ public partial class Clientprefs
 			Password = Config.DatabasePassword,
 			Database = Config.DatabaseName,
 			Port = (uint)Config.DatabasePort,
-			SslMode = Enum.Parse<MySqlSslMode>(Config.DatabaseSslmode, true),
+			SslMode = _mySqlSslMode,
 			AllowUserVariables = true,
 		};
 
@@ -142,14 +148,14 @@ public partial class Clientprefs
 	{
 		try
 		{
-			string cookiequery = @$"CREATE TABLE IF NOT EXISTS {Config.TableName}
+			string cookiequery = @$"CREATE TABLE IF NOT EXISTS `{Config.TableName}`
             (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name varchar({IClientprefsApi.COOKIE_MAX_NAME_LENGTH}) NOT NULL UNIQUE,
                 description varchar({IClientprefsApi.COOKIE_MAX_DESCRIPTION_LENGTH}),
                 access INTEGER
             )";
-			string playerquery = @$"CREATE TABLE IF NOT EXISTS {Config.TableNamePlayerData}
+			string playerquery = @$"CREATE TABLE IF NOT EXISTS `{Config.TableNamePlayerData}`
             (
                 steamid varchar(65) NOT NULL,
                 cookie_id INT NOT NULL,
@@ -168,7 +174,7 @@ public partial class Clientprefs
 
 				BuildMySqlDataSource();
 
-				cookiequery = @$"CREATE TABLE IF NOT EXISTS {Config.TableName}
+				cookiequery = @$"CREATE TABLE IF NOT EXISTS `{Config.TableName}`
                 (
                     id INTEGER unsigned NOT NULL auto_increment,
                     name varchar({IClientprefsApi.COOKIE_MAX_NAME_LENGTH}) NOT NULL UNIQUE,
@@ -177,7 +183,7 @@ public partial class Clientprefs
                     PRIMARY KEY (id)
                 )";
 
-				playerquery = @$"CREATE TABLE IF NOT EXISTS {Config.TableNamePlayerData}
+				playerquery = @$"CREATE TABLE IF NOT EXISTS `{Config.TableNamePlayerData}`
                 (
                     steamid varchar(32) NOT NULL,
                     cookie_id INT NOT NULL,
@@ -204,7 +210,7 @@ public partial class Clientprefs
 					await transaction.CommitAsync();
 				}
 
-				cookiequery = @$"SELECT id, name, description, access FROM {Config.TableName}";
+				cookiequery = @$"SELECT id, name, description, access FROM `{Config.TableName}`";
 
 				var rows = await connection.QueryAsync<CookieRow>(cookiequery);
 
@@ -292,7 +298,7 @@ public partial class Clientprefs
 				{
 					await connection.OpenAsync();
 
-					string query = $"SELECT steamid AS SteamId, cookie_id AS CookieId, value AS Value FROM {Config.TableNamePlayerData} WHERE steamid IN @steamIds";
+					string query = $"SELECT steamid AS SteamId, cookie_id AS CookieId, value AS Value FROM `{Config.TableNamePlayerData}` WHERE steamid IN @steamIds";
 
 					var rows = await connection.QueryAsync<PlayerCookieRow>(query, new { steamIds = toLoad });
 
@@ -402,7 +408,7 @@ public partial class Clientprefs
 				{
 					await connection.OpenAsync();
 
-					string query = $"SELECT cookie_id AS CookieId, value AS Value FROM {Config.TableNamePlayerData} WHERE steamid = @steam";
+					string query = $"SELECT cookie_id AS CookieId, value AS Value FROM `{Config.TableNamePlayerData}` WHERE steamid = @steam";
 
 					var rows = await connection.QueryAsync<PlayerCookieRow>(query, new { steam = steamId });
 

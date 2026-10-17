@@ -86,6 +86,7 @@ public partial class Clientprefs
 
     private ConcurrentDictionary<string, Cookie> _cookiesByName = new();
     private readonly HashSet<string> _connectedSteamIds = new();
+    private readonly List<Task> _pendingSaves = new();
     private MySqlConnector.MySqlDataSource? _mySqlDataSource;
     private bool _databaseLoaded = false, _isMySQL = false;
     private bool _allPluginsLoaded = false, _databaseLoadedEventFired = false;

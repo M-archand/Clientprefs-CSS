@@ -46,6 +46,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         AddCommandListener("map", OnMapEnd, HookMode.Pre);
         AddCommandListener("host_workshop_map", OnMapEnd, HookMode.Pre);
         AddCommandListener("ds_workshop_changelevel", OnMapEnd, HookMode.Pre);
+        RegisterListener<Listeners.OnMapEnd>(() => { SavePlayerCookies(); });
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -74,7 +75,8 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         try
         {
             Logger.LogInformation($"Flushing player cookies to database before unload (timeout {UnloadFlushTimeoutSeconds}s)...");
-            SavePlayerCookies().WaitAsync(TimeSpan.FromSeconds(UnloadFlushTimeoutSeconds)).GetAwaiter().GetResult();
+            SavePlayerCookies();
+            Task.WhenAll(_pendingSaves).WaitAsync(TimeSpan.FromSeconds(UnloadFlushTimeoutSeconds)).GetAwaiter().GetResult();
             Logger.LogInformation("Player cookie flush complete, unloading.");
         }
         catch (TimeoutException)
@@ -86,6 +88,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
             Logger.LogError($"Player cookie flush failed during unload: {ScrubSecrets(ex.Message)}");
         }
 
+        _pendingSaves.Clear();
         _mySqlDataSource?.Dispose();
         _mySqlDataSource = null;
     }

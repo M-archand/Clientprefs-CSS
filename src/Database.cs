@@ -568,7 +568,7 @@ public partial class Clientprefs
 
 		int time = GetEpochTime();
 
-		return Task.Run(async () =>
+		var save = Task.Run(async () =>
 		{
 			try
 			{
@@ -638,5 +638,9 @@ public partial class Clientprefs
 				LogDbError("An error occurred while saving player(s) data; entries kept for retry", ex);
 			}
 		});
+
+		_pendingSaves.RemoveAll(t => t.IsCompleted);
+		_pendingSaves.Add(save);
+		return save;
 	}
 }

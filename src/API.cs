@@ -88,11 +88,30 @@ public class ClientprefsApi : IClientprefsApi
     // or -= (except when used from within the type 'ClientprefsApi')
     public void CallOnDatabaseLoaded()
     {
-        OnDatabaseLoaded?.Invoke();
+        InvokeGuarded(OnDatabaseLoaded, nameof(OnDatabaseLoaded), handler => handler());
     }
+
     public void CallOnPlayerCookiesCached(CCSPlayerController player)
     {
-        OnPlayerCookiesCached?.Invoke(player);
+        InvokeGuarded(OnPlayerCookiesCached, nameof(OnPlayerCookiesCached), handler => handler(player));
+    }
+
+    private void InvokeGuarded<T>(T? handlers, string eventName, Action<T> invoke) where T : Delegate
+    {
+        if (handlers == null) return;
+
+        foreach (var handler in handlers.GetInvocationList())
+        {
+            try
+            {
+                invoke((T)handler);
+            }
+            catch (Exception ex)
+            {
+                var method = handler.Method;
+                _plugin.Logger.LogError($"{eventName} subscriber {method.DeclaringType?.FullName}.{method.Name} ({method.DeclaringType?.Assembly.GetName().Name}) threw: {ex}");
+            }
+        }
     }
 
     public async Task<int> RegPlayerCookieAsync(string name, string description, CookieAccess access = CookieAccess.CookieAccess_Public)

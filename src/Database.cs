@@ -1,4 +1,5 @@
 using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
 using Dapper;
 using MySqlConnector;
 using System.Data.Common;
@@ -333,11 +334,23 @@ public partial class Clientprefs
 		});
 	}
 
+	private static CCSPlayerController? FindConnectedPlayer(string steamId)
+	{
+		return Utilities.GetPlayers().FirstOrDefault(p => p.IsValidPlayer() && p.SteamID.ToString() == steamId);
+	}
+
+	private void EvictIfDisconnected(string steamId)
+	{
+		if (FindConnectedPlayer(steamId) != null) return;
+
+		PlayerSettings.TryRemove(steamId, out _);
+	}
+
 	private void FireCookiesCachedNextFrame(string steamId)
 	{
 		Server.NextWorldUpdate(() =>
 		{
-			var player = Utilities.GetPlayers().FirstOrDefault(p => p.IsValidPlayer() && p.SteamID.ToString() == steamId);
+			var player = FindConnectedPlayer(steamId);
 			if (player == null) return;
 
 			ClientprefsApi.CallOnPlayerCookiesCached(player);
@@ -360,6 +373,8 @@ public partial class Clientprefs
 			FireCookiesCachedNextFrame(steamId);
 			return;
 		}
+
+		setting.LoadFailed = false;
 
 		Task.Run(async () =>
 		{
@@ -496,7 +511,7 @@ public partial class Clientprefs
 			var writes = CollectPendingWrites(single);
 			if (writes.Count == 0)
 			{
-				PlayerSettings.TryRemove(steamId64, out _);
+				EvictIfDisconnected(steamId64);
 				return Task.CompletedTask;
 			}
 
@@ -587,7 +602,7 @@ public partial class Clientprefs
 
 				if (evictAfterSave)
 				{
-					PlayerSettings.TryRemove(steamId64, out _);
+					Server.NextWorldUpdate(() => EvictIfDisconnected(steamId64));
 				}
 			}
 			catch (Exception ex)

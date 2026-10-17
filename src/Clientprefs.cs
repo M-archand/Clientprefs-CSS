@@ -229,7 +229,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
             {
                 if (pref.LoadFailed)
                 {
-                    PlayerSettings.TryRemove(steamId, out _);
+                    EvictIfDisconnected(steamId);
                     return;
                 }
 

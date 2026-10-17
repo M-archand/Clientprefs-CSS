@@ -230,10 +230,10 @@ public partial class Clientprefs
 					}
 				}
 
-				_databaseLoaded = true;
-
 				Server.NextWorldUpdate(() =>
 				{
+					_databaseLoaded = true;
+
 					var steamIds = new List<string>();
 					foreach (var p in Utilities.GetPlayers())
 					{
@@ -272,12 +272,17 @@ public partial class Clientprefs
 			return;
 		}
 
-		if (steamIds.Count == 0) return;
-
+		var toLoad = new List<string>();
 		foreach (var steamId in steamIds)
 		{
-			PlayerSettings.GetOrAdd(steamId, _ => new());
+			var setting = PlayerSettings.GetOrAdd(steamId, _ => new());
+			if (setting.Loaded || setting.LoadTask is { IsCompleted: false }) continue;
+
+			setting.LoadFailed = false;
+			toLoad.Add(steamId);
 		}
+
+		if (toLoad.Count == 0) return;
 
 		var load = Task.Run(async () =>
 		{
@@ -289,7 +294,7 @@ public partial class Clientprefs
 
 					string query = $"SELECT steamid AS SteamId, cookie_id AS CookieId, value AS Value FROM {Config.TableNamePlayerData} WHERE steamid IN @steamIds";
 
-					var rows = await connection.QueryAsync<PlayerCookieRow>(query, new { steamIds });
+					var rows = await connection.QueryAsync<PlayerCookieRow>(query, new { steamIds = toLoad });
 
 					foreach (var row in rows)
 					{
@@ -300,7 +305,7 @@ public partial class Clientprefs
 						}
 					}
 
-					foreach (var steamId in steamIds)
+					foreach (var steamId in toLoad)
 					{
 						if (PlayerSettings.TryGetValue(steamId, out var pref))
 						{
@@ -313,7 +318,7 @@ public partial class Clientprefs
 						foreach (var player in Utilities.GetPlayers())
 						{
 							if (player == null || !player.IsValidPlayer()) continue;
-							if (!steamIds.Contains(player.SteamID.ToString())) continue;
+							if (!toLoad.Contains(player.SteamID.ToString())) continue;
 
 							ClientprefsApi.CallOnPlayerCookiesCached(player);
 						}
@@ -322,7 +327,7 @@ public partial class Clientprefs
 			}
 			catch (Exception ex)
 			{
-				foreach (var steamId in steamIds)
+				foreach (var steamId in toLoad)
 				{
 					if (PlayerSettings.TryGetValue(steamId, out var pref))
 					{
@@ -333,7 +338,7 @@ public partial class Clientprefs
 			}
 		});
 
-		foreach (var steamId in steamIds)
+		foreach (var steamId in toLoad)
 		{
 			if (PlayerSettings.TryGetValue(steamId, out var pref))
 			{

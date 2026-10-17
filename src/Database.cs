@@ -333,6 +333,17 @@ public partial class Clientprefs
 		});
 	}
 
+	private void FireCookiesCachedNextFrame(string steamId)
+	{
+		Server.NextWorldUpdate(() =>
+		{
+			var player = Utilities.GetPlayers().FirstOrDefault(p => p.IsValidPlayer() && p.SteamID.ToString() == steamId);
+			if (player == null) return;
+
+			ClientprefsApi.CallOnPlayerCookiesCached(player);
+		});
+	}
+
 	private void GetPlayerCookies(string steamId)
 	{
 		if (!_databaseLoaded)
@@ -341,7 +352,14 @@ public partial class Clientprefs
 			return;
 		}
 
-		PlayerSettings.GetOrAdd(steamId, _ => new());
+		var setting = PlayerSettings.GetOrAdd(steamId, _ => new());
+
+		if (setting.Loaded)
+		{
+			DebugLog($"Cookies for {steamId} already cached: {setting.CookieCount}");
+			FireCookiesCachedNextFrame(steamId);
+			return;
+		}
 
 		Task.Run(async () =>
 		{
@@ -369,13 +387,7 @@ public partial class Clientprefs
 						DebugLog($"Cookies for {steamId} loaded: {loaded.CookieCount}");
 					}
 
-					Server.NextWorldUpdate(() =>
-					{
-						var player = Utilities.GetPlayers().FirstOrDefault(p => p.IsValidPlayer() && p.SteamID.ToString() == steamId);
-						if (player == null) return;
-
-						ClientprefsApi.CallOnPlayerCookiesCached(player);
-					});
+					FireCookiesCachedNextFrame(steamId);
 				}
 			}
 			catch (Exception ex)
@@ -433,6 +445,36 @@ public partial class Clientprefs
 		return await UpsertCookieAsync(name, description, access);
 	}
 
+	private readonly record struct PendingCookieWrite(ClientCookie Cookie, int Id, string? Value);
+
+	private List<PendingCookieWrite> CollectPendingWrites(PlayerSetting setting)
+	{
+		var writes = new List<PendingCookieWrite>();
+
+		foreach (var cookie in setting.Cookies)
+		{
+			if (!Cookies.ContainsKey(cookie.Id)) continue;
+
+			var newValue = cookie.NewValue;
+			var oldValue = cookie.OldValue;
+
+			if (string.IsNullOrWhiteSpace(newValue))
+			{
+				if (oldValue != null)
+				{
+					writes.Add(new PendingCookieWrite(cookie, cookie.Id, null));
+				}
+				continue;
+			}
+
+			if (oldValue == newValue) continue;
+
+			writes.Add(new PendingCookieWrite(cookie, cookie.Id, newValue));
+		}
+
+		return writes;
+	}
+
 	private Task SavePlayerCookies(string steamId64 = "")
 	{
 		if (!_databaseLoaded)
@@ -441,30 +483,41 @@ public partial class Clientprefs
 			return Task.CompletedTask;
 		}
 
-		var aPlayers = new Dictionary<string, List<ClientCookie>>();
+		bool evictAfterSave = !string.IsNullOrEmpty(steamId64);
+		var aPlayers = new Dictionary<string, List<PendingCookieWrite>>();
 
-		if (!string.IsNullOrEmpty(steamId64))
+		if (evictAfterSave)
 		{
 			if (!PlayerSettings.TryGetValue(steamId64, out var single) || !single.Loaded)
 			{
 				return Task.CompletedTask;
 			}
 
-			aPlayers.Add(steamId64, [.. single.Cookies]);
+			var writes = CollectPendingWrites(single);
+			if (writes.Count == 0)
+			{
+				PlayerSettings.TryRemove(steamId64, out _);
+				return Task.CompletedTask;
+			}
+
+			aPlayers.Add(steamId64, writes);
 		}
 		else
 		{
 			foreach (var pair in PlayerSettings.ToList())
 			{
-				var steamId = pair.Key;
-				var value = pair.Value;
-
-				if (!value.Loaded)
+				if (!pair.Value.Loaded)
 				{
 					continue;
 				}
 
-				aPlayers.Add(steamId, [.. value.Cookies]);
+				var writes = CollectPendingWrites(pair.Value);
+				if (writes.Count == 0)
+				{
+					continue;
+				}
+
+				aPlayers.Add(pair.Key, writes);
 			}
 		}
 
@@ -487,34 +540,25 @@ public partial class Clientprefs
 						foreach (var pair in aPlayers)
 						{
 							var steamId = pair.Key;
-							var cookies = pair.Value;
+							var writes = pair.Value;
 							var deleteIds = new List<int>();
 
-							foreach (var pref in cookies)
+							foreach (var write in writes)
 							{
-								if (!Cookies.ContainsKey(pref.Id)) continue;
-
-								var isNewValueEmpty = string.IsNullOrWhiteSpace(pref.NewValue);
-
-								if (isNewValueEmpty)
+								if (write.Value == null)
 								{
-									if (pref.OldValue != null)
-									{
-										deleteIds.Add(pref.Id);
-									}
+									deleteIds.Add(write.Id);
 									continue;
 								}
-
-								if (pref.OldValue == pref.NewValue) continue;
 
 								query = @$"REPLACE INTO `{Config.TableNamePlayerData}`
                                 (steamid, cookie_id, value, timestamp)
                                 VALUES (@steam, @id, @value, @timestamp);";
 
 								await connection.ExecuteAsync(query,
-								new { steam = steamId, id = pref.Id, value = pref.NewValue, timestamp = time },
+								new { steam = steamId, id = write.Id, value = write.Value, timestamp = time },
 								transaction: transaction);
-								DebugLog($"Saving cookies {pref.Id} for {steamId}");
+								DebugLog($"Saving cookies {write.Id} for {steamId}");
 							}
 
 							if (deleteIds.Count > 0)
@@ -533,9 +577,17 @@ public partial class Clientprefs
 					}
 				}
 
-				foreach (var steamId in aPlayers.Keys)
+				foreach (var writes in aPlayers.Values)
 				{
-					PlayerSettings.TryRemove(steamId, out _);
+					foreach (var write in writes)
+					{
+						write.Cookie.OldValue = write.Value;
+					}
+				}
+
+				if (evictAfterSave)
+				{
+					PlayerSettings.TryRemove(steamId64, out _);
 				}
 			}
 			catch (Exception ex)

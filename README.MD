@@ -96,7 +96,6 @@ The `IClientprefsApi` interface exposes:
 - `bool ArePlayerCookiesCached(player)` - true once the player's cookies are loaded.
 - Events: `OnDatabaseLoaded`, `OnPlayerCookiesCached(player)`.
 
-> Note: the settings-menu natives (`SetCookiePrefabMenu`, `SetCookieMenuItem`, `ShowCookieMenu`) are declared but not yet implemented.
 
 ## Commands
 - `css_cookies` / `css_cookie <name> [value]` - list cookies, or view/change the value of a public cookie for the calling player.
@@ -104,59 +103,22 @@ The `IClientprefsApi` interface exposes:
 ## Config
 ```json
 {
-  "TableName": "css_cookies",
-  "TableNamePlayerData": "css_cookies_playerdata",
+  "TableName": "clientprefs_cookies",
+  "TableNamePlayerData": "clientprefs_playerdata",
   "DatabaseType": "sqlite",
   "DatabaseHost": "",
   "DatabaseName": "",
   "DatabaseUsername": "",
   "DatabasePassword": "",
   "DatabasePort": 3306,
-  "DatabaseSslmode": "none",
+  "DatabaseSslmode": "preferred",
   "Debug": false,
   "ConfigVersion": 1
 }
 ```
-Set `DatabaseType` to `"mysql"` and fill in the connection fields to use MySQL; leave it as `"sqlite"` for a zero-config local database. Enable `Debug` for verbose load/save logging.
+Set `DatabaseType` to `"mysql"` and fill in the connection fields to use MySQL; leave it as `"sqlite"` for a zero-config local database. `DatabaseSslmode` accepts `none`, `preferred` (default), `required`, `verifyca` or `verifyfull`. Table names must be 1-64 letters, digits or underscores and must differ; an invalid config disables the plugin at load with an error in the console. Enable `Debug` for verbose load/save logging.
 
-## Things left to implement
-- [ ] css_settings (cookie settings menu)
 
 ## Changelog
-- v1.1.1
-    - fix: keep player cookies in memory until the database save commits, so a failed save no longer drops pending changes.
-    - fix: cap the unload cookie flush at 30s and print start/end/timeout progress to the console.
-    - fix: gate database exception details behind the Debug flag and scrub the password from any log output.
-    - refactor: hide the unimplemented cookie settings menu API so consumers can't call the crashing stubs.
-    - refactor: consolidate duplicate FindPlayerCookie logic into a single TryFindCookieId.
-    - chore: remove dead code (unused pawn-validation helpers, write-only LatestClientprefID field, redundant constructors).
 
-- v1.1.0
-    - refactor: rebuild for .NET 10 / CSS 369.
-    - feat: async cookie registration via RegPlayerCookieAsync.
-    - fix: preference loss across server restarts by using the database autoincrement id as the cookie id.
-    - perf: batch-load player cookies on connect and enable SQLite WAL mode.
-    - fix: retry transient database connect failures with backoff at boot so OnDatabaseLoaded still fires.
-    - fix: enforce max cookie value length on the console set path.
-    - fix: dispose the MySQL data source on unload to avoid hot-reload leaks.
-    - feat: ship the API as a separate shared ClientprefsApi assembly.
-    - ci: add GitHub Actions build & release workflow.
-
-- v1.0.7
-    - refactor: whole codebase.
-    - fix: cases where player cookies were not getting saved.
-
-- v1.0.6
-    - fix: Exceptions on player cached & disconnect.
-- v1.0.4
-    - fix: CreatePlayerCookie native using wrong parameter name.
-    - fix: SavePlayerCookie missing not operator.
-    - fix: Player preferences not getting saved at map change.
-- v1.0.3
-    - fix: Plugin will no longer throw "Native d01e4eb5 was invoked on a non-main thread" on playerConnect.
-    - Devs can now save clientpref for player at PlayerDisconnect(HookMode.Post) too as the plugin now saves in database after 0.5 seconds.
-    - Added more error logging and added variable in config to enable debug logs.
-- v1.0.2
-    - Fixed dictionary errors for players after map change.
-- v1.0.1
-    - Changed hook method of OnClientprefDatabaseReady & OnPlayerCookiesCached. Please re-refer ClientprefsExample.
+See [CHANGELOG.md](CHANGELOG.md).

@@ -279,7 +279,7 @@ public partial class Clientprefs
 			PlayerSettings.GetOrAdd(steamId, _ => new());
 		}
 
-		Task.Run(async () =>
+		var load = Task.Run(async () =>
 		{
 			try
 			{
@@ -332,6 +332,14 @@ public partial class Clientprefs
 				Server.NextWorldUpdate(() => LogDbError("An error occurred while fetching player preferences", ex));
 			}
 		});
+
+		foreach (var steamId in steamIds)
+		{
+			if (PlayerSettings.TryGetValue(steamId, out var pref))
+			{
+				pref.LoadTask = load;
+			}
+		}
 	}
 
 	private static CCSPlayerController? FindConnectedPlayer(string steamId)
@@ -341,7 +349,7 @@ public partial class Clientprefs
 
 	private void EvictIfDisconnected(string steamId)
 	{
-		if (FindConnectedPlayer(steamId) != null) return;
+		if (_connectedSteamIds.Contains(steamId)) return;
 
 		PlayerSettings.TryRemove(steamId, out _);
 	}
@@ -374,9 +382,14 @@ public partial class Clientprefs
 			return;
 		}
 
+		if (setting.LoadTask is { IsCompleted: false })
+		{
+			return;
+		}
+
 		setting.LoadFailed = false;
 
-		Task.Run(async () =>
+		setting.LoadTask = Task.Run(async () =>
 		{
 			try
 			{

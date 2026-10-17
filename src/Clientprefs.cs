@@ -1,3 +1,4 @@
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
@@ -14,8 +15,6 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     public override string ModuleAuthor => "Cruze, Marchand";
     public override string ModuleVersion => "1.1.1";
 
-    private const int DisconnectSaveMaxAttempts = 50;
-    private const float DisconnectSaveRetryInterval = 0.1f;
     private const int UnloadFlushTimeoutSeconds = 30;
 
     public void OnConfigParsed(ClientprefsConfig config)
@@ -31,6 +30,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         Cookies = new();
         _cookiesByName = new();
         PlayerSettings = new();
+        _connectedSteamIds.Clear();
 
         ClientprefsApi = new ClientprefsApi(this);
         Capabilities.RegisterPluginCapability(PluginCapability, () => ClientprefsApi);
@@ -69,12 +69,6 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     public override void Unload(bool hotReload)
     {
         base.Unload(hotReload);
-
-        foreach (var timer in _saveTimers)
-        {
-            timer.Kill();
-        }
-        _saveTimers.Clear();
 
         try
         {
@@ -197,6 +191,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         }
 
         var steamId = player.SteamID.ToString();
+        _connectedSteamIds.Add(steamId);
         GetPlayerCookies(steamId);
         return HookResult.Continue;
     }
@@ -206,43 +201,56 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     {
         var player = @event.Userid;
 
-        // Reason 1 = NetworkDisconnectionReason.NETWORK_DISCONNECT_SHUTDOWN (server shutdown / map change).
-        // Those cookies are already flushed by OnMapEnd and Unload, so skip the per-player save here.
-        if (player == null || !player.IsValidPlayer() || @event.Reason == 1)
+        if (player == null || !player.IsValidPlayer())
         {
             return HookResult.Continue;
         }
 
         var steamId = player.SteamID.ToString();
-        SaveDisconnectedPlayerCookies(steamId, DisconnectSaveMaxAttempts);
+        _connectedSteamIds.Remove(steamId);
+
+        // Reason 1 = NetworkDisconnectionReason.NETWORK_DISCONNECT_SHUTDOWN (server shutdown / map change).
+        // Those cookies are already flushed by OnMapEnd and Unload, so skip the per-player save here.
+        if (@event.Reason == 1)
+        {
+            return HookResult.Continue;
+        }
+
+        SaveDisconnectedPlayerCookies(steamId);
         return HookResult.Continue;
     }
 
-    private void SaveDisconnectedPlayerCookies(string steamId, int attemptsLeft)
+    private void SaveDisconnectedPlayerCookies(string steamId)
     {
-        CounterStrikeSharp.API.Modules.Timers.Timer? timer = null;
-        timer = AddTimer(DisconnectSaveRetryInterval, () =>
+        if (!PlayerSettings.TryGetValue(steamId, out var pref))
         {
-            _saveTimers.Remove(timer!);
+            return;
+        }
 
-            if (PlayerSettings.TryGetValue(steamId, out var pref))
-            {
-                if (pref.LoadFailed)
-                {
-                    EvictIfDisconnected(steamId);
-                    return;
-                }
+        var load = pref.LoadTask;
+        if (load == null || load.IsCompleted)
+        {
+            FinishDisconnectedPlayerSave(steamId);
+            return;
+        }
 
-                if (attemptsLeft > 0 && !pref.Loaded)
-                {
-                    SaveDisconnectedPlayerCookies(steamId, attemptsLeft - 1);
-                    return;
-                }
-            }
+        load.ContinueWith(_ => Server.NextWorldUpdate(() => FinishDisconnectedPlayerSave(steamId)), TaskScheduler.Default);
+    }
 
-            SavePlayerCookies(steamId);
-        });
-        _saveTimers.Add(timer);
+    private void FinishDisconnectedPlayerSave(string steamId)
+    {
+        if (!PlayerSettings.TryGetValue(steamId, out var pref))
+        {
+            return;
+        }
+
+        if (!pref.Loaded)
+        {
+            EvictIfDisconnected(steamId);
+            return;
+        }
+
+        SavePlayerCookies(steamId);
     }
 
     private HookResult OnMapEnd(CCSPlayerController? player, CommandInfo commandInfo)

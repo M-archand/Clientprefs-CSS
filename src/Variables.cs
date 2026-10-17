@@ -25,6 +25,7 @@ public partial class Clientprefs
     {
         public bool Loaded { get; set; } = false;
         public bool LoadFailed { get; set; } = false;
+        public Task? LoadTask { get; set; }
         private ConcurrentDictionary<int, ClientCookie> _cookieDict { get; set; } = new();
 
         public void LoadCookie(int id, string dbValue)
@@ -84,7 +85,7 @@ public partial class Clientprefs
     private readonly object _clientprefIdLock = new();
 
     private ConcurrentDictionary<string, Cookie> _cookiesByName = new();
-    private readonly HashSet<CounterStrikeSharp.API.Modules.Timers.Timer> _saveTimers = new();
+    private readonly HashSet<string> _connectedSteamIds = new();
     private MySqlConnector.MySqlDataSource? _mySqlDataSource;
     private bool _databaseLoaded = false, _isMySQL = false;
     private bool _allPluginsLoaded = false, _databaseLoadedEventFired = false;

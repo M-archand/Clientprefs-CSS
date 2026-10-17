@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -28,7 +28,7 @@ jobs:
           echo "Found version: $VERSION"
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
           cache: true
@@ -201,14 +201,31 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
 
-          NOTES="Release ${TAG}"
+          # Pull this version's section out of CHANGELOG.md (header line excluded).
+          # Matches both "## [x.y.z](...)" and "### [x.y.z](...)" style headings.
+          NOTES_FILE="release_notes.md"
+          if [ -f CHANGELOG.md ]; then
+            awk -v ver="$VERSION" '
+              found && /^##+ \[/ { exit }
+              $0 ~ ("^##+ \\[" ver "\\]") { found=1; next }
+              found { print }
+            ' CHANGELOG.md > "$NOTES_FILE"
+          else
+            : > "$NOTES_FILE"
+          fi
+
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "::warning::No CHANGELOG.md entry found for ${VERSION}, using default release notes"
+            echo "Release ${TAG}" > "$NOTES_FILE"
+          fi
+
           if [ -n "$PREV_TAG" ]; then
-            NOTES="${NOTES}"$'\n\n'"**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${TAG}"
+            printf '\n\n**Full Changelog**: https://github.com/%s/compare/%s...%s\n' "${{ github.repository }}" "$PREV_TAG" "$TAG" >> "$NOTES_FILE"
           fi
 
           gh release create "$TAG" \
             --title "$TITLE" \
-            --notes "$NOTES" \
+            --notes-file "$NOTES_FILE" \
             $PRERELEASE_FLAG \
             "${{ steps.zip.outputs.artifact }}"
 

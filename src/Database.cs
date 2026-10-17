@@ -204,9 +204,9 @@ public partial class Clientprefs
 					await transaction.CommitAsync();
 				}
 
-				cookiequery = @$"SELECT * FROM {Config.TableName}";
+				cookiequery = @$"SELECT id, name, description, access FROM {Config.TableName}";
 
-				var rows = await connection.QueryAsync(cookiequery);
+				var rows = await connection.QueryAsync<CookieRow>(cookiequery);
 
 				lock (_clientprefIdLock)
 				{
@@ -215,14 +215,15 @@ public partial class Clientprefs
 
 					foreach (var row in rows)
 					{
-						if (Cookies.ContainsKey((int)row.id) || _cookiesByName.ContainsKey((string)row.name)) continue;
+						if (string.IsNullOrEmpty(row.Name)) continue;
+						if (Cookies.ContainsKey(row.Id) || _cookiesByName.ContainsKey(row.Name)) continue;
 
 						var cookie = new Cookie
 						{
-							Id = (int)row.id,
-							Name = row.name,
-							Description = row.description,
-							Access = (CookieAccess)row.access,
+							Id = row.Id,
+							Name = row.Name,
+							Description = row.Description ?? "",
+							Access = row.Access is int access ? (CookieAccess)access : CookieAccess.CookieAccess_Public,
 						};
 						Cookies[cookie.Id] = cookie;
 						_cookiesByName[cookie.Name] = cookie;
@@ -286,16 +287,16 @@ public partial class Clientprefs
 				{
 					await connection.OpenAsync();
 
-					string query = $"SELECT steamid, cookie_id, value FROM {Config.TableNamePlayerData} WHERE steamid IN @steamIds";
+					string query = $"SELECT steamid AS SteamId, cookie_id AS CookieId, value AS Value FROM {Config.TableNamePlayerData} WHERE steamid IN @steamIds";
 
-					var rows = await connection.QueryAsync(query, new { steamIds });
+					var rows = await connection.QueryAsync<PlayerCookieRow>(query, new { steamIds });
 
 					foreach (var row in rows)
 					{
-						var steamId = (string)row.steamid;
-						if (PlayerSettings.TryGetValue(steamId, out var pref))
+						if (row.SteamId == null) continue;
+						if (PlayerSettings.TryGetValue(row.SteamId, out var pref))
 						{
-							pref.LoadCookie((int)row.cookie_id, (string)(row.value ?? ""));
+							pref.LoadCookie(row.CookieId, row.Value ?? "");
 						}
 					}
 
@@ -396,15 +397,15 @@ public partial class Clientprefs
 				{
 					await connection.OpenAsync();
 
-					string query = $"SELECT cookie_id, value FROM {Config.TableNamePlayerData} WHERE steamid = @steam";
+					string query = $"SELECT cookie_id AS CookieId, value AS Value FROM {Config.TableNamePlayerData} WHERE steamid = @steam";
 
-					var rows = await connection.QueryAsync(query, new { steam = steamId });
+					var rows = await connection.QueryAsync<PlayerCookieRow>(query, new { steam = steamId });
 
 					foreach (var row in rows)
 					{
 						if (PlayerSettings.TryGetValue(steamId, out var pref))
 						{
-							pref.LoadCookie((int)row.cookie_id, (string)(row.value ?? ""));
+							pref.LoadCookie(row.CookieId, row.Value ?? "");
 						}
 					}
 
@@ -470,6 +471,21 @@ public partial class Clientprefs
 		}
 
 		return await UpsertCookieAsync(name, description, access);
+	}
+
+	private sealed class CookieRow
+	{
+		public int Id { get; set; }
+		public string? Name { get; set; }
+		public string? Description { get; set; }
+		public int? Access { get; set; }
+	}
+
+	private sealed class PlayerCookieRow
+	{
+		public string? SteamId { get; set; }
+		public int CookieId { get; set; }
+		public string? Value { get; set; }
 	}
 
 	private readonly record struct PendingCookieWrite(ClientCookie Cookie, int Id, string? Value);

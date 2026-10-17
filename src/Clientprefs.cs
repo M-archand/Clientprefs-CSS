@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
+using Microsoft.Extensions.Logging;
 using Clientprefs.API;
 
 namespace Clientprefs;
@@ -72,17 +73,17 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 
         try
         {
-            Console.WriteLine($"[Clientprefs] Flushing player cookies to database before unload (timeout {UnloadFlushTimeoutSeconds}s)...");
+            Logger.LogInformation($"Flushing player cookies to database before unload (timeout {UnloadFlushTimeoutSeconds}s)...");
             SavePlayerCookies().WaitAsync(TimeSpan.FromSeconds(UnloadFlushTimeoutSeconds)).GetAwaiter().GetResult();
-            Console.WriteLine("[Clientprefs] Player cookie flush complete, unloading.");
+            Logger.LogInformation("Player cookie flush complete, unloading.");
         }
         catch (TimeoutException)
         {
-            Console.WriteLine($"[Clientprefs] Player cookie flush did not finish within {UnloadFlushTimeoutSeconds}s; unloading anyway. Some changes may not have been saved.");
+            Logger.LogWarning($"Player cookie flush did not finish within {UnloadFlushTimeoutSeconds}s; unloading anyway. Some changes may not have been saved.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Clientprefs] Player cookie flush failed during unload: {ScrubSecrets(ex.Message)}");
+            Logger.LogError($"Player cookie flush failed during unload: {ScrubSecrets(ex.Message)}");
         }
 
         _mySqlDataSource?.Dispose();
@@ -270,14 +271,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     {
         if (Config.Debug)
         {
-            Console.Write($"[");
-            Console.ForegroundColor = ConsoleColor.Gray;    // Green
-            Console.Write($"ClientPrefs");
-            Console.ResetColor();
-            Console.Write($"] ");
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine(message);
-            Console.ResetColor();
+            Logger.LogInformation(message);
         }
     }
 }

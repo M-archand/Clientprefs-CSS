@@ -16,7 +16,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
 {
     public override string ModuleName => "Clientprefs";
     public override string ModuleAuthor => "Cruze, Marchand";
-    public override string ModuleVersion => "1.1.1";
+    public override string ModuleVersion => "1.2.0";
 
     private const int UnloadFlushTimeoutSeconds = 30;
 

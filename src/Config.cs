@@ -6,9 +6,9 @@ namespace Clientprefs;
 public class ClientprefsConfig : BasePluginConfig
 {
     [JsonPropertyName("TableName")]
-    public string TableName { get; set; } = "css_cookies";
+    public string TableName { get; set; } = "clientprefs_cookies";
     [JsonPropertyName("TableNamePlayerData")]
-    public string TableNamePlayerData { get; set; } = "css_cookies_playerdata";
+    public string TableNamePlayerData { get; set; } = "clientprefs_playerdata";
     [JsonPropertyName("DatabaseType")]
     public string DatabaseType { get; set; } = "sqlite";
     [JsonPropertyName("DatabaseHost")]

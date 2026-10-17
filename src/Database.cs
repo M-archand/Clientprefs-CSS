@@ -75,18 +75,35 @@ public partial class Clientprefs
 		}
 	}
 
+	private void Disable(string reason)
+	{
+		Logger.LogError($"{reason} Clientprefs is disabled; dependent plugins will not receive OnDatabaseLoaded.");
+		Server.NextWorldUpdate(() => _disabled = true);
+	}
+
+	private bool IsDatabaseReady(string caller)
+	{
+		if (_databaseLoaded) return true;
+
+		if (!_disabled)
+		{
+			DebugLog($"{caller} called before the database finished loading.");
+		}
+		return false;
+	}
+
 	// Retries transient DB connect failures with backoff so OnDatabaseLoaded still fires; misconfiguration is not retried.
 	private async Task ConnectDatabaseTableWithRetry()
 	{
 		if (_configError != null)
 		{
-			Logger.LogError($"Invalid configuration: {_configError} Clientprefs is disabled; dependent plugins will not receive OnDatabaseLoaded.");
+			Disable($"Invalid configuration: {_configError}");
 			return;
 		}
 
 		if (!IsDatabaseConfigComplete())
 		{
-			Logger.LogError("Database connection information is missing. Please fill in the information in the config file.");
+			Disable("Database connection information is missing. Please fill in the information in the config file.");
 			return;
 		}
 
@@ -107,7 +124,7 @@ public partial class Clientprefs
 			}
 		}
 
-		Logger.LogError($"Database connection failed after {maxAttempts} attempts. Clientprefs is disabled; dependent plugins will not receive OnDatabaseLoaded.");
+		Disable($"Database connection failed after {maxAttempts} attempts.");
 	}
 
 	private void BuildMySqlDataSource()
@@ -272,11 +289,7 @@ public partial class Clientprefs
 	// then marks each PlayerSetting as Loaded.
 	private void GetPlayerCookiesBatch(List<string> steamIds)
 	{
-		if (!_databaseLoaded)
-		{
-			Logger.LogError($"GetPlayerCookiesBatch called when Database is not loaded yet.");
-			return;
-		}
+		if (!IsDatabaseReady(nameof(GetPlayerCookiesBatch))) return;
 
 		var toLoad = new List<string>();
 		foreach (var steamId in steamIds)
@@ -385,11 +398,7 @@ public partial class Clientprefs
 
 	private void GetPlayerCookies(string steamId)
 	{
-		if (!_databaseLoaded)
-		{
-			Logger.LogError($"GetPlayerCookies called when Database is not loaded yet.");
-			return;
-		}
+		if (!IsDatabaseReady(nameof(GetPlayerCookies))) return;
 
 		var setting = PlayerSettings.GetOrAdd(steamId, _ => new());
 
@@ -538,11 +547,7 @@ public partial class Clientprefs
 
 	private Task SavePlayerCookies(string steamId64 = "")
 	{
-		if (!_databaseLoaded)
-		{
-			Logger.LogError($"SavePlayerCookies called when Database is not loaded yet.");
-			return Task.CompletedTask;
-		}
+		if (!IsDatabaseReady(nameof(SavePlayerCookies))) return Task.CompletedTask;
 
 		bool evictAfterSave = !string.IsNullOrEmpty(steamId64);
 		var aPlayers = new Dictionary<string, List<PendingCookieWrite>>();

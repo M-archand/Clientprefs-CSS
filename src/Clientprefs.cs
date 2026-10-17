@@ -67,6 +67,7 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
         Capabilities.RegisterPluginCapability(PluginCapability, () => ClientprefsApi);
 
         _databaseLoaded = false;
+        _disabled = false;
         _allPluginsLoaded = false;
         _databaseLoadedEventFired = false;
 
@@ -102,20 +103,23 @@ public partial class Clientprefs : BasePlugin, IPluginConfig<ClientprefsConfig>
     {
         base.Unload(hotReload);
 
-        try
+        if (_databaseLoaded)
         {
-            Logger.LogInformation($"Flushing player cookies to database before unload (timeout {UnloadFlushTimeoutSeconds}s)...");
-            SavePlayerCookies();
-            Task.WhenAll(_pendingSaves).WaitAsync(TimeSpan.FromSeconds(UnloadFlushTimeoutSeconds)).GetAwaiter().GetResult();
-            Logger.LogInformation("Player cookie flush complete, unloading.");
-        }
-        catch (TimeoutException)
-        {
-            Logger.LogWarning($"Player cookie flush did not finish within {UnloadFlushTimeoutSeconds}s; unloading anyway. Some changes may not have been saved.");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError($"Player cookie flush failed during unload: {ScrubSecrets(ex.Message)}");
+            try
+            {
+                Logger.LogInformation($"Flushing player cookies to database before unload (timeout {UnloadFlushTimeoutSeconds}s)...");
+                SavePlayerCookies();
+                Task.WhenAll(_pendingSaves).WaitAsync(TimeSpan.FromSeconds(UnloadFlushTimeoutSeconds)).GetAwaiter().GetResult();
+                Logger.LogInformation("Player cookie flush complete, unloading.");
+            }
+            catch (TimeoutException)
+            {
+                Logger.LogWarning($"Player cookie flush did not finish within {UnloadFlushTimeoutSeconds}s; unloading anyway. Some changes may not have been saved.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Player cookie flush failed during unload: {ScrubSecrets(ex.Message)}");
+            }
         }
 
         _pendingSaves.Clear();
